@@ -707,16 +707,16 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         callbacks: {
           title: () => "",
           label: (item) => {
-            if (item.datasetIndex === 0) {
-              return `Mean human ${item.parsed.x.toFixed(1)}, AI ${item.parsed.y.toFixed(1)}`;
-            }
             if (item.datasetIndex === 2) {
               return `Bin centered at ${item.parsed.x.toFixed(2)}: AI mean = ${item.parsed.y.toFixed(2)}`;
             }
             return null;
           },
         },
-        filter: (item) => item.datasetIndex !== 1,
+        // Only show tooltips for the binned-mean line. The dots are
+        // jittered for visibility, so showing per-dot coordinates would
+        // be misleading. The y=x reference line also doesn't need one.
+        filter: (item) => item.datasetIndex === 2,
       },
     },
     scales: {
@@ -732,8 +732,11 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         grid: { display: false },
         border: { color: "#bbb" },
         title: {
-          display: true, text: "Mean human score", padding: 6,
-          color: "#666", font: { size: 11 },
+          display: true,
+          text: "Mean human score (each paper has 2 human reviewers)",
+          padding: 6,
+          color: "#666",
+          font: { size: 11 },
         },
       },
       y: {
