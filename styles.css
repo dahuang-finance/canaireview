@@ -9,10 +9,10 @@
   --accent: #2a2a2a;
   --accent-soft: #f4f4f0;
   --highlight: #fff39a;
-  --max-page: 1080px;
+  --max-page: 1020px;
   --col-main: 720px;
-  --col-side: 240px;
-  --col-gap: 4.5rem;
+  --col-side: 160px;
+  --col-gap: 4rem;
 }
 
 * {
@@ -284,20 +284,11 @@ h3 {
   line-height: 1.4;
 }
 
-/* ---------- Sidebar (Models run so far) ---------- */
+/* ---------- Sidebar (Models covered) ---------- */
 .sidebar {
   position: sticky;
   top: 2rem;
   align-self: start;
-  font-size: 0.9rem;
-}
-
-.sidebar-note {
-  font-size: 0.78rem;
-  color: var(--muted);
-  font-style: italic;
-  line-height: 1.45;
-  margin: -0.4rem 0 0.6rem;
 }
 
 .sidebar .run-log {
@@ -307,21 +298,8 @@ h3 {
 }
 
 .sidebar .run-log li {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 0.45rem 0;
+  padding: 0.6rem 0;
   border-bottom: 1px dashed var(--rule-soft);
-}
-
-.sidebar .run-log li.run-log-head {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 0.7rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  padding-bottom: 0.3rem;
-  font-weight: 600;
 }
 
 .sidebar .run-log li:last-child {
@@ -329,15 +307,17 @@ h3 {
 }
 
 .sidebar .run-log .model {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.2;
 }
 
 .sidebar .run-log .run-date {
   color: var(--muted);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   letter-spacing: 0.02em;
-  white-space: nowrap;
+  margin-top: 0.2rem;
 }
 
 /* ---------- Links ---------- */
