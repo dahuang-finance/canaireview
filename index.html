@@ -87,33 +87,30 @@
           <h2>Figures</h2>
           <div class="figure-grid">
             <figure class="fig-chart">
+              <h3 class="fig-title">Distributional Distance</h3>
               <div class="chart-container">
                 <canvas id="chart-l1"></canvas>
               </div>
-              <figcaption>
-                <strong>Figure 1.</strong> Distributional distance to the
-                human reference, by model release date. Supports Finding 3.
-                <span class="formula">
-                  L<sub>1</sub> = &Sigma;<sub>s=1..5</sub> |H(s) &minus; A(s)|,
-                  where H(s) is the human histogram's mass at score s and
-                  A(s) is the model histogram's mass at score s.
+              <p class="formula">
+                L<sub>1</sub> =
+                <span class="big-sum">
+                  <span class="lim">5</span>
+                  <span class="sigma-glyph">&Sigma;</span>
+                  <span class="lim">s=1</span>
                 </span>
-              </figcaption>
+                |H(s) &minus; A(s)|,
+                where H(s) is the human histogram and A(s) is the AI histogram.
+              </p>
             </figure>
 
             <figure class="fig-chart">
+              <h3 class="fig-title">Correlation</h3>
               <div class="chart-container">
                 <canvas id="chart-corr"></canvas>
               </div>
-              <figcaption>
-                <strong>Figure 2.</strong> Correlation between AI scores and
-                mean human scores, by model release date. Supports Finding 3.
-                <span class="formula">
-                  Pearson correlation between the model's score for a paper
-                  and the mean of the two human scores for the same paper,
-                  computed across all papers.
-                </span>
-              </figcaption>
+              <p class="formula">
+                Pearson correlation between AI's score and the mean human score.
+              </p>
             </figure>
 
             <figure class="fig-placeholder">

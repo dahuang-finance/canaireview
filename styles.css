@@ -237,37 +237,63 @@ h3 {
   margin: 0;
 }
 
+.fig-chart .fig-title {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent);
+  margin: 0 0 0.45rem;
+  padding: 0;
+  border: none;
+  text-align: center;
+}
+
 .fig-chart .chart-container {
   position: relative;
   aspect-ratio: 4 / 3;
-  background: var(--paper);
-  border: 1px solid var(--rule-soft);
-  border-radius: 4px;
-  padding: 0.6rem 0.4rem 0.4rem;
+  padding: 0;
+  background: transparent;
+  border: none;
 }
 
-.fig-chart figcaption {
-  margin-top: 0.6rem;
-  font-size: 0.86rem;
-  color: var(--muted);
-  line-height: 1.45;
-}
-
-.fig-chart figcaption strong {
-  color: var(--ink);
-  font-weight: 600;
-}
-
-.fig-chart figcaption .formula {
-  display: block;
-  margin-top: 0.45rem;
-  padding: 0.55rem 0.75rem;
-  background: var(--accent-soft);
-  border-radius: 3px;
+.fig-chart .formula {
+  margin: 0.65rem 0 0;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  font-style: italic;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   line-height: 1.5;
+  color: var(--muted);
+  text-align: center;
+}
+
+.fig-chart .formula sub {
+  font-size: 0.7em;
+  vertical-align: -0.15em;
+}
+
+/* Stacked summation: 5 above Σ, s=1 below Σ */
+.fig-chart .formula .big-sum {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  line-height: 1;
+  margin: 0 0.1em;
+  position: relative;
+  top: -0.05em;
+}
+
+.fig-chart .formula .big-sum .sigma-glyph {
+  font-size: 1.55em;
+  line-height: 0.85;
+  font-weight: 400;
+}
+
+.fig-chart .formula .big-sum .lim {
+  font-size: 0.6em;
+  line-height: 1;
+  font-style: normal;
   color: var(--ink);
 }
 
