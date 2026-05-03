@@ -8,9 +8,8 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <main>
-    <header>
-      <p class="eyebrow">A living research project</p>
+  <div class="page">
+    <header class="page-header">
       <h1>Can AI Replace the Peer Reviewer?</h1>
       <p class="byline">
         Avner Kalay &nbsp;&middot;&nbsp;
@@ -21,113 +20,152 @@
 
     <section class="abstract">
       <p>
-        Whenever Anthropic or OpenAI releases a new flagship reasoning
-        model, we run the most recent program of submissions to the
-        <a href="https://utahwfc.org/" target="_blank" rel="noopener">Utah
-        Winter Finance Conference</a>
-        (UWFC) through it.
-        UWFC is one of the most selective and longest running boutique
-        finance conferences.
-        Every paper is also independently scored by two senior
-        program-committee members on a 1 to 5 scale.
-        The AI gets the same scale, the same prompt, and the same blinded
-        paper. We compare.
-        We will keep doing this for every new frontier flagship release.
-        Methodology details are in the
+        AI is being deployed at speed to review scientific work for
+        conferences, journals, and grant panels.
+        <strong class="big-question">But <span class="cair">can AI review</span>?</strong>
+        We use submissions to the
+        <a href="https://utahwfc.org/" target="_blank" rel="noopener">Utah Winter Finance Conference</a>
+        (UWFC), one of the most selective and longest running boutique
+        finance conferences, to find out, and we repeat the study for each
+        new frontier flagship release. Methodology in the
         <a href="#" class="placeholder-link">companion paper</a>
         <span class="muted">(coming soon)</span>.
       </p>
     </section>
 
-    <section class="status">
-      <h2>Status</h2>
-      <p>
-        This is a living research project. The companion paper is in draft
-        form and will be linked here on SSRN when complete. A polished
-        interactive dashboard tracking how each reviewed paper is faring in
-        the scientific record is in development.
-      </p>
+    <div class="content-grid">
+      <div class="main-col">
+        <section class="findings">
+          <h2>Findings</h2>
 
-      <p class="status-subhead">Models run so far</p>
-      <ul class="run-log">
-        <li>
-          <span class="model">Anthropic Opus 4.7</span>
-          <span class="run-date">run 2026-05-02</span>
-        </li>
-        <li>
-          <span class="model">Anthropic Opus 4.6</span>
-          <span class="run-date">run 2026-05-02</span>
-        </li>
-        <li>
-          <span class="model">Anthropic Opus 4.5</span>
-          <span class="run-date">run 2026-05-02</span>
-        </li>
-        <li>
-          <span class="model">OpenAI GPT&#8209;5.5</span>
-          <span class="run-date">run 2026-05-02</span>
-        </li>
-        <li>
-          <span class="model">OpenAI GPT&#8209;5.4</span>
-          <span class="run-date">run 2026-05-02</span>
-        </li>
-        <li>
-          <span class="model">OpenAI GPT&#8209;5.1</span>
-          <span class="run-date">run 2026-05-02</span>
-        </li>
-      </ul>
+          <article class="entry latest">
+            <p class="updated">
+              Updated on <time datetime="2026-05-03">May 3, 2026</time>
+            </p>
+            <ol>
+              <li>
+                <strong>AI struggles to identify exceptional papers.</strong>
+                The frontier models concentrate roughly three quarters of
+                their scores in the middle two cells of the 1 to 5 scale,
+                while human reviewers use the full range. Prompting AI to
+                be more critical does not solve the problem, since this
+                just shifts the whole distribution toward the lower end
+                without adding discrimination at the top.
+              </li>
+              <li>
+                <strong>AI's rankings track human rankings only weakly.</strong>
+                The best rank-order agreement we observe, from Opus 4.7,
+                is 0.31, on a scale where 0 means a random ranking and 1
+                means complete agreement.
+              </li>
+              <li>
+                <strong>The gap is closing fast.</strong>
+                Across three model generations from each vendor, released
+                between November 2025 and April 2026, distributional
+                distance to the human reference (how far AI's score
+                distribution sits from the human one) fell by roughly
+                half, from around 0.85 to 0.45, and rank-order agreement
+                roughly doubled, from around 0.12 to 0.25. This holds for
+                both the Opus 4.5 / 4.6 / 4.7 lineage and the
+                GPT&#8209;5.1 / 5.4 / 5.5 lineage.
+              </li>
+            </ol>
+          </article>
 
-      <p class="last-updated">
-        Site last updated: <time datetime="2026-05-03">May 3, 2026</time>
-      </p>
-    </section>
+          <!--
+            When the next generation of frontier models lands, paste a new
+            <article class="entry"> block ABOVE this one, then change this
+            previous entry's class from "entry latest" to "entry".
+          -->
+        </section>
 
-    <section class="findings">
-      <h2>Findings</h2>
+        <section class="figures">
+          <h2>Figures</h2>
+          <div class="figure-grid">
+            <figure class="fig-placeholder">
+              <div class="fig-canvas">
+                <span class="fig-label">Figure 1</span>
+                <span class="fig-coming">Interactive figure coming soon</span>
+              </div>
+              <figcaption>
+                Score distributions: humans versus frontier AI.
+                Supports Finding 1.
+              </figcaption>
+            </figure>
 
-      <article class="entry latest">
-        <p class="updated">
-          Updated on <time datetime="2026-05-03">May 3, 2026</time>
-        </p>
-        <ol>
+            <figure class="fig-placeholder">
+              <div class="fig-canvas">
+                <span class="fig-label">Figure 2</span>
+                <span class="fig-coming">Interactive figure coming soon</span>
+              </div>
+              <figcaption>
+                Per-paper rankings: AI score versus mean human score.
+                Supports Finding 2.
+              </figcaption>
+            </figure>
+
+            <figure class="fig-placeholder">
+              <div class="fig-canvas">
+                <span class="fig-label">Figure 3</span>
+                <span class="fig-coming">Interactive figure coming soon</span>
+              </div>
+              <figcaption>
+                Distributional distance to the human reference, by model
+                generation. Supports Finding 3.
+              </figcaption>
+            </figure>
+
+            <figure class="fig-placeholder">
+              <div class="fig-canvas">
+                <span class="fig-label">Figure 4</span>
+                <span class="fig-coming">Interactive figure coming soon</span>
+              </div>
+              <figcaption>
+                Rank-order agreement with humans, by model generation.
+                Supports Finding 3.
+              </figcaption>
+            </figure>
+          </div>
+        </section>
+      </div>
+
+      <aside class="sidebar">
+        <h3>Models run so far</h3>
+        <ul class="run-log">
           <li>
-            <strong>AI struggles to identify exceptional papers.</strong>
-            The frontier models concentrate roughly three quarters of
-            their scores in the middle two cells of the 1 to 5 scale,
-            while human reviewers use the full range. Prompting AI to be
-            more critical does not solve the problem, since this just
-            shifts the whole distribution toward the lower end without
-            adding discrimination at the top.
+            <span class="model">Opus 4.7</span>
+            <span class="run-date">2026-05-02</span>
           </li>
           <li>
-            <strong>AI's rankings track human rankings only weakly.</strong>
-            The best rank-order agreement we observe, from Opus 4.7, is
-            0.31, on a scale where 0 means a random ranking and 1 means
-            complete agreement.
+            <span class="model">Opus 4.6</span>
+            <span class="run-date">2026-05-02</span>
           </li>
           <li>
-            <strong>The gap is closing fast.</strong>
-            Across three model generations from each vendor, released
-            between November 2025 and April 2026, distributional distance
-            to the human reference (how far AI's score distribution sits
-            from the human one) fell by roughly half, from around 0.85 to
-            0.45, and rank-order agreement roughly doubled, from around
-            0.12 to 0.25. This holds for both the Opus 4.5 / 4.6 / 4.7
-            lineage and the GPT&#8209;5.1 / 5.4 / 5.5 lineage.
+            <span class="model">Opus 4.5</span>
+            <span class="run-date">2026-05-02</span>
           </li>
-        </ol>
-      </article>
-
-      <!--
-        When the next generation of frontier models lands, paste a new
-        <article class="entry"> block ABOVE this one, then change this
-        previous entry's class from "entry latest" to "entry".
-      -->
-
-    </section>
-  </main>
+          <li>
+            <span class="model">GPT&#8209;5.5</span>
+            <span class="run-date">2026-05-02</span>
+          </li>
+          <li>
+            <span class="model">GPT&#8209;5.4</span>
+            <span class="run-date">2026-05-02</span>
+          </li>
+          <li>
+            <span class="model">GPT&#8209;5.1</span>
+            <span class="run-date">2026-05-02</span>
+          </li>
+        </ul>
+      </aside>
+    </div>
+  </div>
 
   <footer>
-    <p>
+    <p class="site-updated">
+      Site last updated: <time datetime="2026-05-03">May 3, 2026</time>
+    </p>
+    <p class="copy">
       &copy; 2026 Kalay, Schallheim, &amp; Huang.
     </p>
   </footer>
