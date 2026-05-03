@@ -121,7 +121,7 @@ const COLORS = {
 // Distinct shapes for the two vendor lineages
 const SHAPES = {
   opus: "circle",
-  gpt:  "triangle",
+  gpt:  "rect",
 };
 
 Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
@@ -225,26 +225,21 @@ function tooltipCallbacks(metricLabel) {
   };
 }
 
-// Per-point styling: highlighted point becomes a solid filled circle/triangle
-// in the vendor's *darker* color (not a black ring around a white circle).
-// Default points stay outlined (white fill, vendor border).
+// Per-point styling: highlighted point is the same vendor color, but
+// solidly filled (no white interior) and bigger. Default stays outlined.
 function pointRadii(vendor, selectedKey) {
   return TREND_DATA[vendor].map(m => m.key === selectedKey ? 10 : 6);
 }
 function pointBorderWidths(vendor, selectedKey) {
-  // Highlighted point uses 0 border width so it reads as solid fill;
-  // default points keep a 2.2 outline.
   return TREND_DATA[vendor].map(m => m.key === selectedKey ? 0 : 2.2);
 }
 function pointFillColors(vendor, selectedKey) {
-  // Highlighted: solid darker vendor color. Default: white (outlined look).
-  const dark = vendor === "opus" ? COLORS.opusDark : COLORS.gptDark;
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? dark : "#fff");
+  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  return TREND_DATA[vendor].map(m => m.key === selectedKey ? base : "#fff");
 }
 function pointBorderColors(vendor, selectedKey) {
   const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
-  const dark = vendor === "opus" ? COLORS.opusDark : COLORS.gptDark;
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? dark : base);
+  return TREND_DATA[vendor].map(_ => base);  // border is always the base color
 }
 
 // ============================================================
@@ -339,29 +334,22 @@ const chartCorr = buildLineChart("chart-corr", "corr", "r",  1);
 // ============================================================
 
 function applyHighlight(modelKey) {
-  const isAll = !modelKey || modelKey === "all";
+  // When modelKey is "all" or falsy, every helper returns uniform default
+  // values. Always assigning ARRAYS here (not scalars) avoids a Chart.js
+  // quirk where switching from per-point arrays back to a scalar leaves
+  // the array values cached on individual point elements.
+  const key = (!modelKey || modelKey === "all") ? null : modelKey;
   for (const chart of [chartL1, chartCorr]) {
     const dsOpus = chart.data.datasets[0];
     const dsGpt  = chart.data.datasets[1];
-    if (isAll) {
-      // Default: outlined, vendor-color border, white fill, radius 6
-      dsOpus.pointRadius = 6; dsOpus.pointBorderWidth = 2.2;
-      dsOpus.pointBorderColor = COLORS.opus;
-      dsOpus.pointBackgroundColor = "#fff";
-      dsGpt.pointRadius = 6; dsGpt.pointBorderWidth = 2.2;
-      dsGpt.pointBorderColor = COLORS.gpt;
-      dsGpt.pointBackgroundColor = "#fff";
-    } else {
-      dsOpus.pointRadius           = pointRadii("opus", modelKey);
-      dsOpus.pointBorderWidth      = pointBorderWidths("opus", modelKey);
-      dsOpus.pointBorderColor      = pointBorderColors("opus", modelKey);
-      dsOpus.pointBackgroundColor  = pointFillColors("opus", modelKey);
-      dsGpt.pointRadius            = pointRadii("gpt",  modelKey);
-      dsGpt.pointBorderWidth       = pointBorderWidths("gpt",  modelKey);
-      dsGpt.pointBorderColor       = pointBorderColors("gpt",  modelKey);
-      dsGpt.pointBackgroundColor   = pointFillColors("gpt",  modelKey);
-    }
-    // Smooth transition (default animation duration set in chart options)
+    dsOpus.pointRadius           = pointRadii("opus", key);
+    dsOpus.pointBorderWidth      = pointBorderWidths("opus", key);
+    dsOpus.pointBorderColor      = pointBorderColors("opus", key);
+    dsOpus.pointBackgroundColor  = pointFillColors("opus", key);
+    dsGpt.pointRadius            = pointRadii("gpt",  key);
+    dsGpt.pointBorderWidth       = pointBorderWidths("gpt",  key);
+    dsGpt.pointBorderColor       = pointBorderColors("gpt",  key);
+    dsGpt.pointBackgroundColor   = pointFillColors("gpt",  key);
     chart.update();
   }
 }
@@ -421,9 +409,32 @@ const humanRefPlugin = {
       ctx.lineTo(xRight, y);
       ctx.stroke();
 
-      // Label: just above the line, with a tiny "lift" so text doesn't
-      // touch the rule.
-      ctx.fillText(`${value.toFixed(1)}%`, bar.x, y - 5);
+      // Label tucked above the line, with a near-white pill background so
+      // the percentage stays readable when an AI bar reaches up under it.
+      const text = `${value.toFixed(1)}%`;
+      const tw = ctx.measureText(text).width;
+      const th = 11;            // approx font cap height
+      const padX = 4, padY = 1.5;
+      const lift = 4;           // gap between rule and pill bottom
+      const cx = bar.x;
+      const top = y - lift - th - padY;
+      const left = cx - tw / 2 - padX;
+      const pillW = tw + 2 * padX;
+      const pillH = th + 2 * padY;
+
+      ctx.save();
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      // Rounded pill (fall back to plain rect if roundRect not supported)
+      if (ctx.roundRect) {
+        ctx.beginPath();
+        ctx.roundRect(left, top, pillW, pillH, 2);
+        ctx.fill();
+      } else {
+        ctx.fillRect(left, top, pillW, pillH);
+      }
+      ctx.fillStyle = HUMAN_LABEL_COLOR;
+      ctx.fillText(text, cx, y - lift);
+      ctx.restore();
     }
     ctx.restore();
   },
