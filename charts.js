@@ -118,11 +118,20 @@ const COLORS = {
   human:     "#7c7565",
 };
 
-// Distinct shapes for the two vendor lineages
+// Distinct shapes for the two vendor lineages.
+// Squares read visually smaller than circles at the same nominal radius,
+// so we scale GPT's marker up so they feel evenly weighted against Opus.
 const SHAPES = {
   opus: "circle",
   gpt:  "rect",
 };
+const SHAPE_SCALE = {
+  opus: 1.0,
+  gpt:  1.5,
+};
+const BASE_RADIUS  = 6;
+const HIGH_RADIUS  = 10;
+const HOVER_RADIUS = 9;
 
 Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
 Chart.defaults.font.size = 12;
@@ -228,7 +237,10 @@ function tooltipCallbacks(metricLabel) {
 // Per-point styling: highlighted point is the same vendor color, but
 // solidly filled (no white interior) and bigger. Default stays outlined.
 function pointRadii(vendor, selectedKey) {
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? 10 : 6);
+  const s = SHAPE_SCALE[vendor];
+  return TREND_DATA[vendor].map(m =>
+    m.key === selectedKey ? HIGH_RADIUS * s : BASE_RADIUS * s
+  );
 }
 function pointBorderWidths(vendor, selectedKey) {
   return TREND_DATA[vendor].map(m => m.key === selectedKey ? 0 : 2.2);
@@ -255,19 +267,25 @@ function vendorOfKey(key) {
   return key.startsWith("opus") ? "opus" : "gpt";
 }
 
-// Custom legend onClick: blocks hiding the vendor whose model is selected
+// Custom legend onClick: blocks hiding the vendor whose model is selected.
+// Uses chart.hide() / chart.show() (not setDatasetVisibility + update),
+// because those Chart.js helpers run a smooth fade-out / fade-in animation
+// rather than just popping the series off.
 function lockedLegendOnClick(e, legendItem, legend) {
-  const ds = legend.chart.data.datasets[legendItem.datasetIndex];
   // Convention: dataset 0 = Opus, dataset 1 = GPT (in top charts)
   const vendor = legendItem.datasetIndex === 0 ? "opus" : "gpt";
   if (vendorOfKey(currentSelection) === vendor) {
     return; // locked: do nothing
   }
-  // Default toggle behavior
+  const chart = legend.chart;
   const idx = legendItem.datasetIndex;
-  const visible = legend.chart.isDatasetVisible(idx);
-  legend.chart.setDatasetVisibility(idx, !visible);
-  legend.chart.update();
+  if (chart.isDatasetVisible(idx)) {
+    chart.hide(idx);
+    legendItem.hidden = true;
+  } else {
+    chart.show(idx);
+    legendItem.hidden = false;
+  }
 }
 
 // ============================================================
@@ -285,6 +303,7 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
           borderColor: COLORS.opus,
           pointStyle: SHAPES.opus,
           ...POINT_BASE,
+          pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE.opus,
         },
         {
           label: "OpenAI GPT",
@@ -292,6 +311,7 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
           borderColor: COLORS.gpt,
           pointStyle: SHAPES.gpt,
           ...POINT_BASE,
+          pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE.gpt,
         },
       ],
     },
