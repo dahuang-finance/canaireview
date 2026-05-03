@@ -89,28 +89,34 @@
         <h3>Models covered</h3>
         <ul class="run-log">
           <li>
-            <div class="model">Opus 4.7</div>
-            <div class="run-date">run on 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">Opus 4.6</div>
-            <div class="run-date">run on 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">Opus 4.5</div>
-            <div class="run-date">run on 2026-05-02</div>
-          </li>
-          <li>
             <div class="model">GPT&#8209;5.5</div>
-            <div class="run-date">run on 2026-05-02</div>
+            <div class="meta">released 2026-04-23</div>
+            <div class="meta">run 2026-05-02</div>
+          </li>
+          <li>
+            <div class="model">Opus 4.7</div>
+            <div class="meta">released 2026-04-16</div>
+            <div class="meta">run 2026-05-02</div>
           </li>
           <li>
             <div class="model">GPT&#8209;5.4</div>
-            <div class="run-date">run on 2026-05-02</div>
+            <div class="meta">released 2026-03-05</div>
+            <div class="meta">run 2026-05-02</div>
+          </li>
+          <li>
+            <div class="model">Opus 4.6</div>
+            <div class="meta">released 2026-02-05</div>
+            <div class="meta">run 2026-05-02</div>
+          </li>
+          <li>
+            <div class="model">Opus 4.5</div>
+            <div class="meta">released 2025-11-24</div>
+            <div class="meta">run 2026-05-02</div>
           </li>
           <li>
             <div class="model">GPT&#8209;5.1</div>
-            <div class="run-date">run on 2026-05-02</div>
+            <div class="meta">released 2025-11-12</div>
+            <div class="meta">run 2026-05-02</div>
           </li>
         </ul>
       </aside>
@@ -127,8 +133,9 @@
       <div class="figures-row">
         <figure class="fig-chart">
           <h3 class="fig-title">
-            L<sub>1</sub> Distributional Distance
-            <span class="info-icon" tabindex="0" aria-label="L1 definition">?
+            L<sub>1</sub> Distributional Distance<button
+              class="info-trigger" type="button" tabindex="0"
+              aria-label="What is L1?"><span aria-hidden="true">?</span>
               <span class="info-tooltip" role="tooltip">
                 L<sub>1</sub> =
                 <span class="big-sum">
@@ -136,10 +143,11 @@
                   <span class="sigma-glyph">&Sigma;</span>
                   <span class="lim">s=1</span>
                 </span>
-                |H(s) &minus; A(s)|, where H(s) is the human score
-                histogram and A(s) is the AI score histogram.
+                |H(s) &minus; A(s)|, where H(s) is the share of human
+                scores at score s, and A(s) is the share of AI scores at
+                score s.
               </span>
-            </span>
+            </button>
           </h3>
           <div class="chart-container">
             <canvas id="chart-l1"></canvas>
@@ -161,8 +169,8 @@
     <section class="figures-block drilldown">
       <header class="figures-block-head with-picker">
         <div class="figures-block-head-text">
-          <p class="block-eyebrow">Per-model detail</p>
-          <h2 class="block-title">Look inside one model</h2>
+          <p class="block-eyebrow">Score detail</p>
+          <h2 class="block-title" id="drilldown-title">Look across all six models</h2>
         </div>
         <div class="model-picker">
           <label for="model-select">Model:</label>

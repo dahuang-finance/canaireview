@@ -13,17 +13,17 @@
 // ============================================================
 
 // Trend data (per-model L1 + Pearson correlation).
-// Release dates are placeholders within Nov 2025 -- Apr 2026 window.
+// Release dates verified via vendor announcements (Nov 2025 - Apr 2026).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-04", l1: 0.814, corr: 0.234 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-01-15", l1: 0.650, corr: 0.267 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-08", l1: 0.454, corr: 0.310 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.234 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.267 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.310 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-20", l1: 0.898, corr: 0.133 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-02-10", l1: 0.734, corr: 0.208 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-22", l1: 0.449, corr: 0.235 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.133 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.208 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.235 },
   ],
 };
 
@@ -108,11 +108,20 @@ const MODEL_LABELS = {
 // Style constants
 // ============================================================
 
+// Modern, editorial palette: warm terracotta vs cool ocean blue.
+// Each vendor has a "dark" variant used for the highlighted state.
 const COLORS = {
-  opus:     "#cc7a00",
-  gpt:      "#0072b2",
-  human:    "#7c7565",
-  highlight:"#1a1a1a",
+  opus:      "#c2553d",
+  opusDark:  "#7e2d1c",
+  gpt:       "#34618d",
+  gptDark:   "#1f3f5e",
+  human:     "#7c7565",
+};
+
+// Distinct shapes for the two vendor lineages
+const SHAPES = {
+  opus: "circle",
+  gpt:  "triangle",
 };
 
 Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
@@ -127,10 +136,13 @@ if (window["ChartMatrix"]) {
   // explicit register is not needed when the UMD bundle is loaded.
 }
 
+// Default point look: outlined (white fill, colored border).
+// Highlight (per-point) overrides via the `pointBackgroundColor` /
+// `pointBorderColor` arrays set in applyHighlight().
 const POINT_BASE = {
   pointRadius: 6,
   pointHoverRadius: 9,
-  pointBorderWidth: 2,
+  pointBorderWidth: 2.2,
   pointBackgroundColor: "#fff",
   borderWidth: 2.4,
   tension: 0.04,
@@ -143,21 +155,31 @@ const POINT_BASE = {
 const X_MIN = "2025-10-15";
 const X_MAX = "2026-05-15";
 
+// Custom: only two labeled ticks, positioned at ~2/3 of each month so
+// the labels sit visually close to where the data lives, not at the
+// month boundary.
+const TICK_NOV = new Date(2025, 10, 20).getTime();
+const TICK_APR = new Date(2026,  3, 20).getTime();
+
 const X_AXIS_TIME = {
   type: "time",
   min: X_MIN,
   max: X_MAX,
   time: { unit: "month", tooltipFormat: "MMM d, yyyy" },
+  afterBuildTicks: function (scale) {
+    scale.ticks = [
+      { value: TICK_NOV, major: true },
+      { value: TICK_APR, major: true },
+    ];
+  },
   ticks: {
     autoSkip: false,
     maxRotation: 0,
     color: "#666",
     font: { size: 10 },
     callback: function (value) {
-      const d = new Date(value);
-      const m = d.getMonth(), y = d.getFullYear();
-      if (y === 2025 && m === 10) return "Nov 2025";
-      if (y === 2026 && m ===  3) return "Apr 2026";
+      if (value === TICK_NOV) return "Nov 2025";
+      if (value === TICK_APR) return "Apr 2026";
       return "";
     },
   },
@@ -203,15 +225,26 @@ function tooltipCallbacks(metricLabel) {
   };
 }
 
-// Per-point styling for highlighting the selected model
+// Per-point styling: highlighted point becomes a solid filled circle/triangle
+// in the vendor's *darker* color (not a black ring around a white circle).
+// Default points stay outlined (white fill, vendor border).
 function pointRadii(vendor, selectedKey) {
   return TREND_DATA[vendor].map(m => m.key === selectedKey ? 10 : 6);
 }
 function pointBorderWidths(vendor, selectedKey) {
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? 3 : 2);
+  // Highlighted point uses 0 border width so it reads as solid fill;
+  // default points keep a 2.2 outline.
+  return TREND_DATA[vendor].map(m => m.key === selectedKey ? 0 : 2.2);
 }
-function pointBorderColors(vendor, selectedKey, baseColor) {
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? COLORS.highlight : baseColor);
+function pointFillColors(vendor, selectedKey) {
+  // Highlighted: solid darker vendor color. Default: white (outlined look).
+  const dark = vendor === "opus" ? COLORS.opusDark : COLORS.gptDark;
+  return TREND_DATA[vendor].map(m => m.key === selectedKey ? dark : "#fff");
+}
+function pointBorderColors(vendor, selectedKey) {
+  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  const dark = vendor === "opus" ? COLORS.opusDark : COLORS.gptDark;
+  return TREND_DATA[vendor].map(m => m.key === selectedKey ? dark : base);
 }
 
 // ============================================================
@@ -227,14 +260,14 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
           label: "Anthropic Opus",
           data: pointsFor("opus", metric),
           borderColor: COLORS.opus,
-          backgroundColor: COLORS.opus,
+          pointStyle: SHAPES.opus,
           ...POINT_BASE,
         },
         {
           label: "OpenAI GPT",
           data: pointsFor("gpt", metric),
           borderColor: COLORS.gpt,
-          backgroundColor: COLORS.gpt,
+          pointStyle: SHAPES.gpt,
           ...POINT_BASE,
         },
       ],
@@ -244,12 +277,15 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
       maintainAspectRatio: false,
       interaction: { mode: "nearest", intersect: true },
       layout: { padding: { top: 8, right: 18, bottom: 4, left: 4 } },
+      animation: { duration: 600, easing: "easeOutCubic" },
       plugins: {
         legend: {
           position: "top", align: "end",
+          // disable hide-on-click so users can't accidentally drop a series
+          onClick: () => {},
           labels: {
-            usePointStyle: true, pointStyle: "circle",
-            boxWidth: 6, boxHeight: 6, padding: 12,
+            usePointStyle: true,
+            boxWidth: 8, boxHeight: 8, padding: 14,
             font: { size: 11 }, color: "#333",
           },
         },
@@ -274,25 +310,30 @@ const chartCorr = buildLineChart("chart-corr", "corr", "r",  1);
 // ============================================================
 
 function applyHighlight(modelKey) {
-  // modelKey is e.g. "opus-4.7" or "all"
   const isAll = !modelKey || modelKey === "all";
   for (const chart of [chartL1, chartCorr]) {
     const dsOpus = chart.data.datasets[0];
     const dsGpt  = chart.data.datasets[1];
     if (isAll) {
-      dsOpus.pointRadius = 6;       dsOpus.pointBorderWidth = 2;
+      // Default: outlined, vendor-color border, white fill, radius 6
+      dsOpus.pointRadius = 6; dsOpus.pointBorderWidth = 2.2;
       dsOpus.pointBorderColor = COLORS.opus;
-      dsGpt.pointRadius  = 6;       dsGpt.pointBorderWidth  = 2;
-      dsGpt.pointBorderColor  = COLORS.gpt;
+      dsOpus.pointBackgroundColor = "#fff";
+      dsGpt.pointRadius = 6; dsGpt.pointBorderWidth = 2.2;
+      dsGpt.pointBorderColor = COLORS.gpt;
+      dsGpt.pointBackgroundColor = "#fff";
     } else {
-      dsOpus.pointRadius = pointRadii("opus", modelKey);
-      dsOpus.pointBorderWidth = pointBorderWidths("opus", modelKey);
-      dsOpus.pointBorderColor = pointBorderColors("opus", modelKey, COLORS.opus);
-      dsGpt.pointRadius  = pointRadii("gpt",  modelKey);
-      dsGpt.pointBorderWidth = pointBorderWidths("gpt",  modelKey);
-      dsGpt.pointBorderColor = pointBorderColors("gpt",  modelKey, COLORS.gpt);
+      dsOpus.pointRadius           = pointRadii("opus", modelKey);
+      dsOpus.pointBorderWidth      = pointBorderWidths("opus", modelKey);
+      dsOpus.pointBorderColor      = pointBorderColors("opus", modelKey);
+      dsOpus.pointBackgroundColor  = pointFillColors("opus", modelKey);
+      dsGpt.pointRadius            = pointRadii("gpt",  modelKey);
+      dsGpt.pointBorderWidth       = pointBorderWidths("gpt",  modelKey);
+      dsGpt.pointBorderColor       = pointBorderColors("gpt",  modelKey);
+      dsGpt.pointBackgroundColor   = pointFillColors("gpt",  modelKey);
     }
-    chart.update("none");
+    // Smooth transition (default animation duration set in chart options)
+    chart.update();
   }
 }
 
@@ -329,6 +370,7 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
     responsive: true,
     maintainAspectRatio: false,
     layout: { padding: { top: 8, right: 12, bottom: 4, left: 4 } },
+    animation: { duration: 600, easing: "easeOutCubic" },
     plugins: {
       legend: {
         position: "top", align: "end",
@@ -478,7 +520,7 @@ function aiBarColorFor(modelKey) {
 function applyModelSelection(modelKey) {
   const label = MODEL_LABELS[modelKey];
 
-  // Top charts: highlight the selected point
+  // Top charts: highlight the selected point (smooth transition)
   applyHighlight(modelKey);
 
   // Histogram: AI bars use the model-specific data and vendor color
@@ -488,20 +530,29 @@ function applyModelSelection(modelKey) {
   const aiColor = modelKey === "all" ? "#999" : aiBarColorFor(modelKey);
   histDs.backgroundColor = aiColor;
   histDs.borderColor = aiColor;
-  chartHist.update("none");
+  chartHist.update();
 
-  // Heatmap: swap data
+  // Heatmap: swap data (matrix plugin doesn't smoothly animate cell colors,
+  // but switching is fast)
   chartHeatmap.data.datasets[0].data = heatmapDataFor(modelKey);
-  chartHeatmap.update("none");
+  chartHeatmap.update();
 
-  // Subtitles under fig titles
+  // Section title updates dynamically based on selection
+  const blockTitle = document.getElementById("drilldown-title");
+  if (blockTitle) {
+    blockTitle.textContent = (modelKey === "all")
+      ? "Look across all six models"
+      : `Look inside ${label}`;
+  }
+
+  // Per-figure subtitles
   const histSub = document.getElementById("hist-subtitle");
   const hmSub   = document.getElementById("heatmap-subtitle");
   if (histSub) histSub.textContent = (modelKey === "all")
     ? "All-model average vs human reference"
     : `${label} vs human reference`;
   if (hmSub) hmSub.textContent = (modelKey === "all")
-    ? "Across all six models, share of papers in each (Human × AI) cell"
+    ? "Across all six models: share of papers in each (Human × AI) cell"
     : `${label}: share of papers in each (Human × AI) cell`;
 }
 

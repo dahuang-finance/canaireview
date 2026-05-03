@@ -326,54 +326,61 @@ h3 {
   margin-top: 0.25rem;
 }
 
-/* ---------- Info icon (?) with hover tooltip ---------- */
-.info-icon {
+/* ---------- Info trigger (outlined "?" button next to fig title) ---------- */
+.info-trigger {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.05rem;
-  height: 1.05rem;
-  margin-left: 0.3rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--paper);
-  background: var(--accent);
+  width: 1.1em;
+  height: 1.1em;
+  margin-left: 0.45em;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.65em;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--rule);
   border-radius: 50%;
   cursor: help;
   position: relative;
   vertical-align: middle;
-  letter-spacing: 0;
-  transition: background 0.15s;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
 
-.info-icon:hover,
-.info-icon:focus {
-  background: #000;
+.info-trigger:hover,
+.info-trigger:focus {
+  color: var(--paper);
+  background: var(--accent);
+  border-color: var(--accent);
   outline: none;
 }
 
 .info-tooltip {
   display: none;
   position: absolute;
-  bottom: calc(100% + 8px);
+  bottom: calc(100% + 10px);
   left: 50%;
   transform: translateX(-50%);
   width: 320px;
   max-width: 80vw;
   padding: 0.7rem 0.9rem;
-  background: #1a1a1a;
-  color: #f5f5f5;
+  background: #1f1f1f;
+  color: #f4f4f4;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 400;
   letter-spacing: normal;
   text-transform: none;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  line-height: 1.5;
+  line-height: 1.55;
   z-index: 100;
   text-align: left;
   pointer-events: none;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  font-style: normal;
 }
 
 .info-tooltip::after {
@@ -383,12 +390,12 @@ h3 {
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: #1a1a1a;
+  border-top-color: #1f1f1f;
 }
 
-.info-icon:hover .info-tooltip,
-.info-icon:focus .info-tooltip,
-.info-icon:focus-within .info-tooltip {
+.info-trigger:hover .info-tooltip,
+.info-trigger:focus .info-tooltip,
+.info-trigger:focus-within .info-tooltip {
   display: block;
 }
 
@@ -492,8 +499,6 @@ h3 {
 
 /* ---------- Sidebar (Models covered) ---------- */
 .sidebar {
-  position: sticky;
-  top: 2rem;
   align-self: start;
 }
 
@@ -501,10 +506,21 @@ h3 {
   list-style: none;
   padding: 0;
   margin: 0;
+  /* Cap height so a long list scrolls instead of pushing layout */
+  max-height: 70vh;
+  overflow-y: auto;
+  /* Subtle scrollbar styling (WebKit) */
+  scrollbar-width: thin;
+}
+
+.sidebar .run-log::-webkit-scrollbar { width: 6px; }
+.sidebar .run-log::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border-radius: 3px;
 }
 
 .sidebar .run-log li {
-  padding: 0.6rem 0;
+  padding: 0.65rem 0;
   border-bottom: 1px dashed var(--rule-soft);
 }
 
@@ -516,14 +532,15 @@ h3 {
   font-weight: 600;
   font-size: 0.95rem;
   line-height: 1.2;
+  margin-bottom: 0.3rem;
 }
 
-.sidebar .run-log .run-date {
+.sidebar .run-log .meta {
   color: var(--muted);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 0.74rem;
+  font-size: 0.72rem;
   letter-spacing: 0.02em;
-  margin-top: 0.2rem;
+  line-height: 1.45;
 }
 
 /* ---------- Links ---------- */
