@@ -292,6 +292,14 @@ h3 {
   font-size: 0.9rem;
 }
 
+.sidebar-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.45;
+  margin: -0.4rem 0 0.6rem;
+}
+
 .sidebar .run-log {
   list-style: none;
   padding: 0;
@@ -304,6 +312,16 @@ h3 {
   align-items: baseline;
   padding: 0.45rem 0;
   border-bottom: 1px dashed var(--rule-soft);
+}
+
+.sidebar .run-log li.run-log-head {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding-bottom: 0.3rem;
+  font-weight: 600;
 }
 
 .sidebar .run-log li:last-child {
