@@ -768,6 +768,26 @@ fetch("scatter_data.json")
   });
 
 // ============================================================
+// Belt-and-suspenders: re-size every chart on window resize.
+// Chart.js v4 already uses ResizeObserver, but breakpoint changes that
+// move figures between 1- and 2-column layouts can leave a chart at the
+// previous (larger) buffer size. A debounced resize() forces a redraw
+// at the current container dimensions.
+// ============================================================
+let _resizeDebounce;
+window.addEventListener("resize", () => {
+  clearTimeout(_resizeDebounce);
+  _resizeDebounce = setTimeout(() => {
+    const charts = [chartL1, chartCorr, chartHist, chartScatter];
+    for (const c of charts) {
+      if (c && typeof c.resize === "function") {
+        try { c.resize(); } catch (_) { /* noop */ }
+      }
+    }
+  }, 120);
+});
+
+// ============================================================
 // Dropdown wiring
 // ============================================================
 
