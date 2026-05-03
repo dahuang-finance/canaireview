@@ -232,8 +232,43 @@ h3 {
   gap: 1.5rem;
 }
 
-.fig-placeholder {
+.fig-placeholder,
+.fig-chart {
   margin: 0;
+}
+
+.fig-chart .chart-container {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: var(--paper);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px;
+  padding: 0.6rem 0.4rem 0.4rem;
+}
+
+.fig-chart figcaption {
+  margin-top: 0.6rem;
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.fig-chart figcaption strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.fig-chart figcaption .formula {
+  display: block;
+  margin-top: 0.45rem;
+  padding: 0.55rem 0.75rem;
+  background: var(--accent-soft);
+  border-radius: 3px;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--ink);
 }
 
 .fig-canvas {

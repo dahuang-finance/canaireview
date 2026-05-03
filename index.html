@@ -86,9 +86,39 @@
         <section class="figures">
           <h2>Figures</h2>
           <div class="figure-grid">
+            <figure class="fig-chart">
+              <div class="chart-container">
+                <canvas id="chart-l1"></canvas>
+              </div>
+              <figcaption>
+                <strong>Figure 1.</strong> Distributional distance to the
+                human reference, by model release date. Supports Finding 3.
+                <span class="formula">
+                  L<sub>1</sub> = &Sigma;<sub>s=1..5</sub> |H(s) &minus; A(s)|,
+                  where H(s) is the human histogram's mass at score s and
+                  A(s) is the model histogram's mass at score s.
+                </span>
+              </figcaption>
+            </figure>
+
+            <figure class="fig-chart">
+              <div class="chart-container">
+                <canvas id="chart-corr"></canvas>
+              </div>
+              <figcaption>
+                <strong>Figure 2.</strong> Correlation between AI scores and
+                mean human scores, by model release date. Supports Finding 3.
+                <span class="formula">
+                  Pearson correlation between the model's score for a paper
+                  and the mean of the two human scores for the same paper,
+                  computed across all papers.
+                </span>
+              </figcaption>
+            </figure>
+
             <figure class="fig-placeholder">
               <div class="fig-canvas">
-                <span class="fig-label">Figure 1</span>
+                <span class="fig-label">Figure 3</span>
                 <span class="fig-coming">Interactive figure coming soon</span>
               </div>
               <figcaption>
@@ -99,34 +129,12 @@
 
             <figure class="fig-placeholder">
               <div class="fig-canvas">
-                <span class="fig-label">Figure 2</span>
+                <span class="fig-label">Figure 4</span>
                 <span class="fig-coming">Interactive figure coming soon</span>
               </div>
               <figcaption>
                 Per-paper rankings: AI score versus mean human score.
                 Supports Finding 2.
-              </figcaption>
-            </figure>
-
-            <figure class="fig-placeholder">
-              <div class="fig-canvas">
-                <span class="fig-label">Figure 3</span>
-                <span class="fig-coming">Interactive figure coming soon</span>
-              </div>
-              <figcaption>
-                Distributional distance to the human reference, by model
-                generation. Supports Finding 3.
-              </figcaption>
-            </figure>
-
-            <figure class="fig-placeholder">
-              <div class="fig-canvas">
-                <span class="fig-label">Figure 4</span>
-                <span class="fig-coming">Interactive figure coming soon</span>
-              </div>
-              <figcaption>
-                Per-paper correlation with humans, by model generation.
-                Supports Finding 3.
               </figcaption>
             </figure>
           </div>
@@ -173,5 +181,11 @@
       &copy; 2026 Kalay, Schallheim, &amp; Huang.
     </p>
   </footer>
+
+  <!-- Chart.js + date-fns adapter + annotation plugin (for reference lines) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="charts.js"></script>
 </body>
 </html>
