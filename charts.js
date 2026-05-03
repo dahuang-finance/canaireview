@@ -248,6 +248,34 @@ function pointBorderColors(vendor, selectedKey) {
 }
 
 // ============================================================
+// Selection state
+// ============================================================
+// Tracks the dropdown's current value; legend click handlers consult this
+// to decide whether to allow hiding a vendor series (we lock the vendor
+// whose model is currently highlighted).
+let currentSelection = "all";
+
+function vendorOfKey(key) {
+  if (!key || key === "all") return null;
+  return key.startsWith("opus") ? "opus" : "gpt";
+}
+
+// Custom legend onClick: blocks hiding the vendor whose model is selected
+function lockedLegendOnClick(e, legendItem, legend) {
+  const ds = legend.chart.data.datasets[legendItem.datasetIndex];
+  // Convention: dataset 0 = Opus, dataset 1 = GPT (in top charts)
+  const vendor = legendItem.datasetIndex === 0 ? "opus" : "gpt";
+  if (vendorOfKey(currentSelection) === vendor) {
+    return; // locked: do nothing
+  }
+  // Default toggle behavior
+  const idx = legendItem.datasetIndex;
+  const visible = legend.chart.isDatasetVisible(idx);
+  legend.chart.setDatasetVisibility(idx, !visible);
+  legend.chart.update();
+}
+
+// ============================================================
 // Top row: line charts (L1, correlation)
 // ============================================================
 
@@ -281,8 +309,9 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
       plugins: {
         legend: {
           position: "top", align: "end",
-          // disable hide-on-click so users can't accidentally drop a series
-          onClick: () => {},
+          // Conditional: hide-on-click is allowed UNLESS this vendor is
+          // the one currently highlighted via the dropdown.
+          onClick: lockedLegendOnClick,
           labels: {
             usePointStyle: true,
             boxWidth: 8, boxHeight: 8, padding: 14,
@@ -338,10 +367,68 @@ function applyHighlight(modelKey) {
 }
 
 // ============================================================
-// Bottom-left: histogram (humans vs selected model)
+// Bottom-left: histogram
+//   AI bars (single dataset) + custom-drawn human reference rules.
+//   The human distribution is static, so we render it as horizontal
+//   line segments that sit ON TOP of the AI bars at their respective
+//   percentages, each labeled. This keeps the human anchor always
+//   visible regardless of which model the user picks.
 // ============================================================
 
 const SCORE_LABELS = ["1 (best)", "2", "3", "4", "5 (worst)"];
+const HUMAN_HIST = FIG_DATA.human_hist;
+const HUMAN_REF_COLOR = "#1f1f1f";   // strong but not pure black
+const HUMAN_REF_WIDTH = 2.0;
+const HUMAN_LABEL_COLOR = "#1f1f1f";
+const HUMAN_LABEL_FONT = "600 10.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
+
+// Custom Chart.js plugin: draws a horizontal rule across each AI bar
+// at the human percentage for that score, with the percentage label
+// tucked just above the line.
+const humanRefPlugin = {
+  id: "humanRef",
+  afterDatasetsDraw(chart) {
+    const data = chart.options.plugins.humanRef?.data;
+    if (!Array.isArray(data)) return;
+    // Use the AI dataset's bar geometry for exact alignment
+    const meta = chart.getDatasetMeta(0);
+    if (!meta || !meta.data || !meta.data.length) return;
+    const yScale = chart.scales.y;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.strokeStyle = HUMAN_REF_COLOR;
+    ctx.lineWidth = HUMAN_REF_WIDTH;
+    ctx.lineCap = "round";
+    ctx.font = HUMAN_LABEL_FONT;
+    ctx.fillStyle = HUMAN_LABEL_COLOR;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "bottom";
+
+    for (let i = 0; i < data.length; i++) {
+      const bar = meta.data[i];
+      if (!bar) continue;
+      const value = data[i];
+      const w = bar.width ?? 0;
+      // Slightly extend the rule beyond the bar edges for an elegant
+      // overhang; about 6% on each side.
+      const overhang = w * 0.06;
+      const xLeft  = bar.x - w / 2 - overhang;
+      const xRight = bar.x + w / 2 + overhang;
+      const y = yScale.getPixelForValue(value);
+
+      ctx.beginPath();
+      ctx.moveTo(xLeft, y);
+      ctx.lineTo(xRight, y);
+      ctx.stroke();
+
+      // Label: just above the line, with a tiny "lift" so text doesn't
+      // touch the rule.
+      ctx.fillText(`${value.toFixed(1)}%`, bar.x, y - 5);
+    }
+    ctx.restore();
+  },
+};
+Chart.register(humanRefPlugin);
 
 const chartHist = new Chart(document.getElementById("chart-hist"), {
   type: "bar",
@@ -349,35 +436,63 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
     labels: SCORE_LABELS,
     datasets: [
       {
-        label: "Human reviewers",
-        data: FIG_DATA.human_hist,
-        backgroundColor: COLORS.human,
-        borderColor: COLORS.human,
-        borderWidth: 0,
-        borderRadius: 2,
-      },
-      {
         label: "AI: All-model average",
         data: FIG_DATA.models.all.hist,
-        backgroundColor: COLORS.opus,  // initial; updated per-model
+        backgroundColor: COLORS.opus,
         borderColor: COLORS.opus,
         borderWidth: 0,
         borderRadius: 2,
+        categoryPercentage: 0.85,
+        barPercentage: 0.92,
       },
     ],
   },
   options: {
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { top: 8, right: 12, bottom: 4, left: 4 } },
+    layout: { padding: { top: 14, right: 12, bottom: 4, left: 4 } },
     animation: { duration: 600, easing: "easeOutCubic" },
     plugins: {
+      // Per-chart options for the custom human-reference plugin
+      humanRef: { data: HUMAN_HIST },
       legend: {
         position: "top", align: "end",
+        // Synthesize a two-item legend: AI bar + Human reference rule
         labels: {
-          usePointStyle: true, pointStyle: "rect",
-          boxWidth: 10, boxHeight: 10, padding: 12,
+          padding: 14,
           font: { size: 11 },
+          color: "#333",
+          usePointStyle: true,
+          generateLabels: (chart) => {
+            const aiDs = chart.data.datasets[0];
+            return [
+              {
+                text: aiDs.label,
+                fillStyle: aiDs.backgroundColor,
+                strokeStyle: aiDs.backgroundColor,
+                lineWidth: 0,
+                pointStyle: "rect",
+                hidden: !chart.isDatasetVisible(0),
+                datasetIndex: 0,
+              },
+              {
+                text: "Human reference",
+                fillStyle: "transparent",
+                strokeStyle: HUMAN_REF_COLOR,
+                lineWidth: HUMAN_REF_WIDTH,
+                pointStyle: "line",
+                hidden: false,
+                datasetIndex: -1,
+              },
+            ];
+          },
+        },
+        // Human reference is synthetic; click does nothing on it.
+        onClick: (e, item, legend) => {
+          if (item.datasetIndex < 0) return;
+          const visible = legend.chart.isDatasetVisible(item.datasetIndex);
+          legend.chart.setDatasetVisibility(item.datasetIndex, !visible);
+          legend.chart.update();
         },
       },
       tooltip: {
@@ -519,15 +634,28 @@ function aiBarColorFor(modelKey) {
 
 function applyModelSelection(modelKey) {
   const label = MODEL_LABELS[modelKey];
+  currentSelection = modelKey;
+
+  // If a specific vendor is now selected, make sure that series is
+  // visible in the top charts (un-hide if it had been toggled off).
+  const vendor = vendorOfKey(modelKey);
+  if (vendor) {
+    const dsIdx = vendor === "opus" ? 0 : 1;
+    for (const chart of [chartL1, chartCorr]) {
+      if (!chart.isDatasetVisible(dsIdx)) {
+        chart.setDatasetVisibility(dsIdx, true);
+      }
+    }
+  }
 
   // Top charts: highlight the selected point (smooth transition)
   applyHighlight(modelKey);
 
-  // Histogram: AI bars use the model-specific data and vendor color
-  const histDs = chartHist.data.datasets[1];
+  // Histogram: single AI dataset; swap data + color to vendor's
+  const histDs = chartHist.data.datasets[0];
   histDs.data = FIG_DATA.models[modelKey].hist;
   histDs.label = "AI: " + label;
-  const aiColor = modelKey === "all" ? "#999" : aiBarColorFor(modelKey);
+  const aiColor = modelKey === "all" ? "#9a9a9a" : aiBarColorFor(modelKey);
   histDs.backgroundColor = aiColor;
   histDs.borderColor = aiColor;
   chartHist.update();
