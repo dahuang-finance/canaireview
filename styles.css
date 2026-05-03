@@ -110,70 +110,106 @@ p {
   text-underline-offset: 3px;
 }
 
-/* ---------- Findings log ---------- */
-.findings-log .entry {
+/* ---------- Status ---------- */
+.status-subhead {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 1.6rem 0 0.6rem;
+}
+
+.run-log {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.run-log li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--rule-soft);
+  font-size: 0.95rem;
+}
+
+.run-log li:last-child {
+  border-bottom: none;
+}
+
+.run-log .model {
+  font-weight: 500;
+}
+
+.run-log .run-date {
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.83rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.last-updated {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
+  margin-top: 1.2rem;
+}
+
+/* ---------- Findings ---------- */
+.findings .entry {
   margin: 0 0 2.5rem;
   padding-top: 0.25rem;
 }
 
-.findings-log .entry + .entry {
+.findings .entry + .entry {
   border-top: 1px dashed var(--rule-soft);
   padding-top: 1.5rem;
   margin-top: 1.5rem;
   opacity: 0.78;
 }
 
-.findings-log .entry-head {
-  margin-bottom: 1rem;
-}
-
-.findings-log time {
-  display: inline-block;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-soft);
-  padding: 0.25rem 0.55rem;
-  border-radius: 3px;
-}
-
-.findings-log .cohort {
-  margin: 0.55rem 0 0;
-  font-size: 0.9rem;
-  color: var(--muted);
-  font-style: italic;
-}
-
-.findings-log .cohort-dates {
-  white-space: nowrap;
-}
-
-.findings-log .entry.latest {
+.findings .entry.latest {
   position: relative;
   padding-left: 1.1rem;
   border-left: 3px solid var(--accent);
 }
 
-.findings-log ol.findings {
+.findings .updated {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 1rem;
+}
+
+.findings .updated time {
+  background: var(--accent-soft);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  margin-left: 0.25rem;
+}
+
+.findings ol {
   list-style: none;
   counter-reset: f;
   padding: 0;
   margin: 0;
 }
 
-.findings-log ol.findings li {
+.findings ol li {
   counter-increment: f;
   position: relative;
   padding: 0.2rem 0 0.2rem 2.2rem;
-  margin-bottom: 0.9rem;
+  margin-bottom: 0.95rem;
   font-size: 0.99rem;
   line-height: 1.55;
 }
 
-.findings-log ol.findings li::before {
+.findings ol li::before {
   content: counter(f);
   position: absolute;
   left: 0;
@@ -189,13 +225,6 @@ p {
   color: var(--paper);
   background: var(--accent);
   border-radius: 50%;
-}
-
-/* ---------- Status ---------- */
-.last-updated {
-  font-size: 0.85rem;
-  color: var(--muted);
-  font-style: italic;
 }
 
 /* ---------- Links ---------- */
@@ -215,6 +244,7 @@ a:hover {
   html { font-size: 16px; }
   main { padding: 2rem 1.2rem; border: none; }
   h1 { font-size: 1.9rem; }
-  .findings-log .entry.latest { padding-left: 0.9rem; }
-  .findings-log ol.findings li { padding-left: 1.9rem; }
+  .findings .entry.latest { padding-left: 0.9rem; }
+  .findings ol li { padding-left: 1.9rem; }
+  .run-log li { font-size: 0.9rem; }
 }

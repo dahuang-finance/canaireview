@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Can AI Replace the Peer Reviewer?</title>
-  <meta name="description" content="A living research project tracking how each new generation of frontier AI compares to human peer reviewers, using the Utah Winter Finance Conference as the test bed.">
+  <meta name="description" content="A living research project comparing each new generation of frontier AI to human peer reviewers, using submissions to the Utah Winter Finance Conference.">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -21,79 +21,108 @@
 
     <section class="abstract">
       <p>
-        For every new generation of frontier large language models, we send
-        the latest annual program of submissions to the
+        Whenever Anthropic or OpenAI releases a new flagship reasoning
+        model, we run the most recent program of submissions to the
         <a href="https://utahwfc.org/" target="_blank" rel="noopener">Utah
-        Winter Finance Conference</a> (UWFC) &mdash; widely regarded as one
-        of the most selective invitation-only finance research conferences
-        &mdash; through the latest reasoning models from Anthropic and
-        OpenAI under a fixed prompt and the same 1&ndash;5 scoring scale
-        used by the human program committee. Each paper is independently
-        scored by two senior committee members; we compare. See details of
-        the methodology in the
+        Winter Finance Conference</a>
+        (UWFC) through it.
+        UWFC is one of the most selective and longest running boutique
+        finance conferences.
+        Every paper is also independently scored by two senior
+        program-committee members on a 1 to 5 scale.
+        The AI gets the same scale, the same prompt, and the same blinded
+        paper. We compare.
+        We will keep doing this for every new frontier flagship release.
+        Methodology details are in the
         <a href="#" class="placeholder-link">companion paper</a>
         <span class="muted">(coming soon)</span>.
       </p>
     </section>
 
-    <section class="findings-log">
-      <h2>Findings log</h2>
+    <section class="status">
+      <h2>Status</h2>
+      <p>
+        This is a living research project. The companion paper is in draft
+        form and will be linked here on SSRN when complete. A polished
+        interactive dashboard tracking how each reviewed paper is faring in
+        the scientific record is in development.
+      </p>
+
+      <p class="status-subhead">Models run so far</p>
+      <ul class="run-log">
+        <li>
+          <span class="model">Anthropic Opus 4.7</span>
+          <span class="run-date">run 2026-05-02</span>
+        </li>
+        <li>
+          <span class="model">Anthropic Opus 4.6</span>
+          <span class="run-date">run 2026-05-02</span>
+        </li>
+        <li>
+          <span class="model">Anthropic Opus 4.5</span>
+          <span class="run-date">run 2026-05-02</span>
+        </li>
+        <li>
+          <span class="model">OpenAI GPT&#8209;5.5</span>
+          <span class="run-date">run 2026-05-02</span>
+        </li>
+        <li>
+          <span class="model">OpenAI GPT&#8209;5.4</span>
+          <span class="run-date">run 2026-05-02</span>
+        </li>
+        <li>
+          <span class="model">OpenAI GPT&#8209;5.1</span>
+          <span class="run-date">run 2026-05-02</span>
+        </li>
+      </ul>
+
+      <p class="last-updated">
+        Site last updated: <time datetime="2026-05-03">May 3, 2026</time>
+      </p>
+    </section>
+
+    <section class="findings">
+      <h2>Findings</h2>
 
       <article class="entry latest">
-        <header class="entry-head">
-          <time datetime="2026-05-03">May 3, 2026</time>
-          <p class="cohort">
-            Anthropic Opus&nbsp;4.5&nbsp;/&nbsp;4.6&nbsp;/&nbsp;4.7
-            and OpenAI GPT&#8209;5.1&nbsp;/&nbsp;5.4&nbsp;/&nbsp;5.5
-            <span class="cohort-dates">(released between November&nbsp;2025 and April&nbsp;2026)</span>
-          </p>
-        </header>
-        <ol class="findings">
+        <p class="updated">
+          Updated on <time datetime="2026-05-03">May 3, 2026</time>
+        </p>
+        <ol>
           <li>
-            <strong>AI faces a stark tradeoff.</strong> It is extremely
-            reluctant to assign low scores &mdash; a positivity bias
-            &mdash; and at the same time it fails to identify the
-            exceptional papers a human program committee would single
-            out. Humans use the full 1&ndash;5 range; the frontier model
-            concentrates roughly three quarters of its scores in the
-            middle two cells of the scale.
+            <strong>AI struggles to identify exceptional papers.</strong>
+            The frontier models concentrate roughly three quarters of
+            their scores in the middle two cells of the 1 to 5 scale,
+            while human reviewers use the full range. Prompting AI to be
+            more critical does not solve the problem, since this just
+            shifts the whole distribution toward the lower end without
+            adding discrimination at the top.
           </li>
           <li>
             <strong>AI's rankings track human rankings only weakly.</strong>
-            Even on the papers AI does score, the per-paper correlation
-            between the AI score and the mean human score reaches only
-            0.31 at the frontier, and rank-order agreement is similarly
-            low.
+            The best rank-order agreement we observe, from Opus 4.7, is
+            0.31, on a scale where 0 means a random ranking and 1 means
+            complete agreement.
           </li>
           <li>
-            <strong>The gap is closing fast.</strong> Across three model
-            generations from each vendor, both the distributional
-            distance to the human reference and per-paper rank-order
-            agreement improved monotonically with every release. The
-            newest models close roughly half the gap of the oldest.
+            <strong>The gap is closing fast.</strong>
+            Across three model generations from each vendor, released
+            between November 2025 and April 2026, distributional distance
+            to the human reference (how far AI's score distribution sits
+            from the human one) fell by roughly half, from around 0.85 to
+            0.45, and rank-order agreement roughly doubled, from around
+            0.12 to 0.25. This holds for both the Opus 4.5 / 4.6 / 4.7
+            lineage and the GPT&#8209;5.1 / 5.4 / 5.5 lineage.
           </li>
         </ol>
       </article>
 
       <!--
         When the next generation of frontier models lands, paste a new
-        <article class="entry"> block ABOVE this comment. Change the
-        previous entry's class from "entry latest" to "entry" so the
-        latest visual treatment moves up.
+        <article class="entry"> block ABOVE this one, then change this
+        previous entry's class from "entry latest" to "entry".
       -->
 
-    </section>
-
-    <section class="status">
-      <h2>Status</h2>
-      <p>
-        The working paper draft will be linked here on SSRN when complete.
-        A periodically refreshed dashboard tracking how each reviewed paper
-        is faring in the scientific record is in development.
-      </p>
-      <p class="last-updated">
-        Site last updated: <time datetime="2026-05-03">May 3, 2026</time>
-      </p>
     </section>
   </main>
 
