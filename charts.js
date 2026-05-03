@@ -4,7 +4,7 @@
  * over model release date. Two lineages (Opus, GPT). Hover shows model
  * name, release date, and value. The dropdown can highlight one point.
  *
- * Bottom row (per-model detail): Score histogram + AI-vs-human heatmap.
+ * Bottom row (per-model detail): Score histogram + per-paper scatter.
  * Both react to the dropdown. Default selection is "all-model average".
  */
 
@@ -127,7 +127,7 @@ const SHAPES = {
 };
 const SHAPE_SCALE = {
   opus: 1.0,
-  gpt:  1.5,
+  gpt:  1.3,
 };
 const BASE_RADIUS  = 6;
 const HIGH_RADIUS  = 10;
@@ -139,10 +139,6 @@ Chart.defaults.color = "#444";
 
 if (window["chartjs-plugin-annotation"]) {
   Chart.register(window["chartjs-plugin-annotation"]);
-}
-if (window["ChartMatrix"]) {
-  // chartjs-chart-matrix v2 exports controllers via Chart automatically;
-  // explicit register is not needed when the UMD bundle is loaded.
 }
 
 // Default point look: outlined (white fill, colored border).
@@ -556,96 +552,220 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
 });
 
 // ============================================================
-// Bottom-right: heatmap (5x5, AI score × human score)
+// Bottom-right: per-paper scatter (mean human score vs AI score)
+//   Data is loaded async from scatter_data.json (~340 KB) — too big to
+//   inline. Until the fetch resolves, the scatter is empty; once loaded,
+//   applyModelSelection populates it.
 // ============================================================
 
-// Build matrix data shape: array of {x, y, v}
-function heatmapDataFor(modelKey) {
-  const m = FIG_DATA.models[modelKey].heatmap;
-  // m[h_index][a_index] is the percentage; h_index 0..4 corresponds to
-  // human score 1..5, similarly a_index 0..4 -> AI score 1..5.
-  const out = [];
-  for (let h = 0; h < 5; h++) {
-    for (let a = 0; a < 5; a++) {
-      out.push({ x: a + 1, y: h + 1, v: m[h][a] });
-    }
-  }
+let SCATTER_DATA = null;          // populated after fetch
+let SCATTER_JITTERED = {};        // cached jittered points per model key
+
+// Reproducible-ish jitter so points stay put across re-renders
+function seededRandom(seed) {
+  let s = seed | 0;
+  return () => {
+    s = (s * 1664525 + 1013904223) | 0;
+    return ((s >>> 0) / 0xffffffff - 0.5);  // -0.5..0.5
+  };
+}
+
+function jitteredFor(key) {
+  if (SCATTER_JITTERED[key]) return SCATTER_JITTERED[key];
+  if (!SCATTER_DATA || !SCATTER_DATA[key]) return [];
+  const pts = SCATTER_DATA[key].points;
+  const rand = seededRandom(key.charCodeAt(0) * 9973 + (key.length * 17));
+  // Specific models: integer AI, half-integer mean human → larger jitter
+  // "all": already continuous → smaller jitter
+  const xJ = key === "all" ? 0.04 : 0.12;
+  const yJ = key === "all" ? 0.04 : 0.12;
+  const out = pts.map(p => ({
+    x: p.h + rand() * 2 * xJ,
+    y: p.a + rand() * 2 * yJ,
+  }));
+  SCATTER_JITTERED[key] = out;
   return out;
 }
 
-// Sequential blue palette for heatmap fills
-function heatmapColor(v, vmax = 25) {
-  const t = Math.max(0, Math.min(v / vmax, 1));
-  // Light cream → mid blue → deep blue
-  const lightness = 96 - t * 60;
-  const sat = 25 + t * 35;
-  return `hsl(210, ${sat}%, ${lightness}%)`;
+const SCATTER_DOT = {
+  base: "#999",      // gray for "all"
+  baseAlpha: "rgba(140,140,140,0.20)",
+  opusAlpha: "rgba(194,85,61,0.28)",     // COLORS.opus at low alpha
+  gptAlpha:  "rgba(52,97,141,0.28)",     // COLORS.gpt at low alpha
+};
+
+function scatterDotColor(modelKey) {
+  if (modelKey === "all") return SCATTER_DOT.baseAlpha;
+  const v = vendorOfKey(modelKey);
+  return v === "opus" ? SCATTER_DOT.opusAlpha : SCATTER_DOT.gptAlpha;
 }
 
-const chartHeatmap = new Chart(document.getElementById("chart-heatmap"), {
-  type: "matrix",
+function scatterLineColor(modelKey) {
+  if (modelKey === "all") return "#1f1f1f";
+  const v = vendorOfKey(modelKey);
+  return v === "opus" ? COLORS.opus : COLORS.gpt;
+}
+
+const chartScatter = new Chart(document.getElementById("chart-scatter"), {
+  type: "scatter",
   data: {
-    datasets: [{
-      label: "AI vs human score share (%)",
-      data: heatmapDataFor("all"),
-      backgroundColor: (ctx) => heatmapColor(ctx.raw.v),
-      borderColor: "#fff",
-      borderWidth: 2,
-      width:  ({chart}) => (chart.chartArea?.width  ?? 0) / 5 - 4,
-      height: ({chart}) => (chart.chartArea?.height ?? 0) / 5 - 4,
-    }],
+    datasets: [
+      // 0: dots (one per paper), populated on fetch
+      {
+        label: "Papers",
+        type: "scatter",
+        data: [],
+        backgroundColor: SCATTER_DOT.baseAlpha,
+        borderColor: "transparent",
+        pointRadius: 2.6,
+        pointHoverRadius: 5,
+      },
+      // 1: 45° reference line (perfect agreement)
+      {
+        label: "Perfect agreement",
+        type: "line",
+        data: [{ x: 1, y: 1 }, { x: 5, y: 5 }],
+        borderColor: "#aaa",
+        borderDash: [4, 4],
+        borderWidth: 1,
+        pointRadius: 0,
+        showLine: true,
+        fill: false,
+      },
+      // 2: binned conditional mean of AI given human
+      {
+        label: "AI mean per human-score bin",
+        type: "line",
+        data: [],
+        borderColor: "#1f1f1f",
+        borderWidth: 2,
+        pointRadius: 4,
+        pointBackgroundColor: "#1f1f1f",
+        pointBorderColor: "#fff",
+        pointBorderWidth: 1.5,
+        showLine: true,
+        fill: false,
+        tension: 0.05,
+      },
+    ],
   },
   options: {
     responsive: true,
     maintainAspectRatio: false,
-    layout: { padding: { top: 8, right: 12, bottom: 4, left: 4 } },
+    animation: { duration: 600, easing: "easeOutCubic" },
+    interaction: { mode: "nearest", intersect: true },
+    layout: { padding: { top: 8, right: 14, bottom: 4, left: 4 } },
     plugins: {
-      legend: { display: false },
+      legend: {
+        position: "top", align: "end",
+        // Skip the synthetic "perfect agreement" entry; show only Papers
+        // and the binned mean for cleanliness.
+        labels: {
+          padding: 12,
+          font: { size: 11 },
+          usePointStyle: true,
+          generateLabels: (chart) => {
+            const dotDs = chart.data.datasets[0];
+            const lineDs = chart.data.datasets[2];
+            return [
+              {
+                text: "Papers (one dot each)",
+                fillStyle: dotDs.backgroundColor,
+                strokeStyle: dotDs.backgroundColor,
+                lineWidth: 0,
+                pointStyle: "circle",
+                hidden: false,
+                datasetIndex: 0,
+              },
+              {
+                text: "AI mean by human-score bin",
+                fillStyle: lineDs.borderColor,
+                strokeStyle: lineDs.borderColor,
+                lineWidth: 2,
+                pointStyle: "line",
+                hidden: false,
+                datasetIndex: 2,
+              },
+              {
+                text: "Perfect agreement (y = x)",
+                fillStyle: "transparent",
+                strokeStyle: "#999",
+                lineWidth: 1,
+                pointStyle: "line",
+                lineDash: [4, 4],
+                hidden: false,
+                datasetIndex: 1,
+              },
+            ];
+          },
+        },
+        onClick: () => {},   // these aren't real toggleable series
+      },
       tooltip: {
         backgroundColor: "rgba(20,20,20,0.92)",
         padding: 10,
         callbacks: {
           title: () => "",
           label: (item) => {
-            const { x, y, v } = item.raw;
-            return `Human ${y} × AI ${x}: ${v.toFixed(1)}% of papers`;
+            if (item.datasetIndex === 0) {
+              return `Mean human ${item.parsed.x.toFixed(1)}, AI ${item.parsed.y.toFixed(1)}`;
+            }
+            if (item.datasetIndex === 2) {
+              return `Bin centered at ${item.parsed.x.toFixed(2)}: AI mean = ${item.parsed.y.toFixed(2)}`;
+            }
+            return null;
           },
         },
+        filter: (item) => item.datasetIndex !== 1,
       },
     },
     scales: {
       x: {
         type: "linear",
-        min: 0.5, max: 5.5,
-        offset: false,
+        min: 0.6, max: 5.4,
         ticks: {
           stepSize: 1,
-          callback: (v) => (v >= 1 && v <= 5 && v === Math.floor(v)) ? `AI ${v}` : "",
+          callback: (v) => (v === Math.floor(v) && v >= 1 && v <= 5) ? v : "",
           color: "#444",
           font: { size: 11 },
         },
         grid: { display: false },
         border: { color: "#bbb" },
-        title: { display: false },
+        title: {
+          display: true, text: "Mean human score", padding: 6,
+          color: "#666", font: { size: 11 },
+        },
       },
       y: {
         type: "linear",
-        min: 0.5, max: 5.5,
-        reverse: true,
-        offset: false,
+        min: 0.6, max: 5.4,
         ticks: {
           stepSize: 1,
-          callback: (v) => (v >= 1 && v <= 5 && v === Math.floor(v)) ? `Human ${v}` : "",
+          callback: (v) => (v === Math.floor(v) && v >= 1 && v <= 5) ? v : "",
           color: "#444",
           font: { size: 11 },
         },
         grid: { display: false },
         border: { color: "#bbb" },
-        title: { display: false },
+        title: {
+          display: true, text: "AI score", padding: 6,
+          color: "#666", font: { size: 11 },
+        },
       },
     },
   },
 });
+
+// Fetch scatter data, then render the initial selection
+fetch("scatter_data.json")
+  .then(r => r.json())
+  .then(data => {
+    SCATTER_DATA = data;
+    applyModelSelection(currentSelection);
+  })
+  .catch(err => {
+    console.error("Failed to load scatter_data.json:", err);
+  });
 
 // ============================================================
 // Dropdown wiring
@@ -691,10 +811,17 @@ function applyModelSelection(modelKey) {
   histDs.borderColor = aiColor;
   chartHist.update();
 
-  // Heatmap: swap data (matrix plugin doesn't smoothly animate cell colors,
-  // but switching is fast)
-  chartHeatmap.data.datasets[0].data = heatmapDataFor(modelKey);
-  chartHeatmap.update();
+  // Scatter: swap dot cloud + binned mean for the selected model
+  if (SCATTER_DATA && SCATTER_DATA[modelKey]) {
+    const dotsDs = chartScatter.data.datasets[0];
+    const lineDs = chartScatter.data.datasets[2];
+    dotsDs.data = jitteredFor(modelKey);
+    dotsDs.backgroundColor = scatterDotColor(modelKey);
+    lineDs.data = SCATTER_DATA[modelKey].binned.map(p => ({ x: p.h, y: p.a }));
+    lineDs.borderColor = scatterLineColor(modelKey);
+    lineDs.pointBackgroundColor = scatterLineColor(modelKey);
+    chartScatter.update();
+  }
 
   // Section title updates dynamically based on selection
   const blockTitle = document.getElementById("drilldown-title");
@@ -705,14 +832,14 @@ function applyModelSelection(modelKey) {
   }
 
   // Per-figure subtitles
-  const histSub = document.getElementById("hist-subtitle");
-  const hmSub   = document.getElementById("heatmap-subtitle");
+  const histSub    = document.getElementById("hist-subtitle");
+  const scatterSub = document.getElementById("scatter-subtitle");
   if (histSub) histSub.textContent = (modelKey === "all")
     ? "All-model average vs human reference"
     : `${label} vs human reference`;
-  if (hmSub) hmSub.textContent = (modelKey === "all")
-    ? "Across all six models: share of papers in each (Human × AI) cell"
-    : `${label}: share of papers in each (Human × AI) cell`;
+  if (scatterSub) scatterSub.textContent = (modelKey === "all")
+    ? "Each dot = one paper (AI score averaged across all six models)"
+    : `Each dot = one paper, scored by ${label}`;
 }
 
 document.getElementById("model-select").addEventListener("change", (e) => {
