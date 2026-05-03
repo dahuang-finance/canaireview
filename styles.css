@@ -9,7 +9,7 @@
   --accent: #2a2a2a;
   --accent-soft: #f4f4f0;
   --highlight: #fff39a;
-  --max-page: 1020px;
+  --max-page: 1180px;
   --col-main: 720px;
   --col-side: 160px;
   --col-gap: 4rem;
@@ -221,15 +221,175 @@ h3 {
   border-radius: 50%;
 }
 
-/* ---------- Figures ---------- */
-.figures {
-  margin: 0 0 3rem;
+/* ---------- Figures (full-width sections, two blocks) ---------- */
+.figures-block {
+  margin: 3rem 0 2.5rem;
 }
 
-.figure-grid {
+.figures-block + .figures-block {
+  margin-top: 3.5rem;
+  padding-top: 2.5rem;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.figures-block-head {
+  margin-bottom: 1.4rem;
+}
+
+.figures-block-head.with-picker {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.figures-block-head .block-eyebrow {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 0.3rem;
+}
+
+.figures-block-head .block-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+  border: none;
+  padding: 0;
+  text-transform: none;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+
+.figures-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  gap: 2rem;
+}
+
+/* ---------- Model picker (dropdown) ---------- */
+.model-picker {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+}
+
+.model-picker label {
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.model-picker select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  padding: 0.45rem 2rem 0.45rem 0.7rem;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' stroke='%23555' stroke-width='1.4' fill='none' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.model-picker select:hover { border-color: var(--accent); }
+.model-picker select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(42,42,42,0.08);
+}
+
+/* ---------- Figure subtitle (small descriptor under fig title) ---------- */
+.fig-subtitle {
+  display: block;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  font-style: italic;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+/* ---------- Info icon (?) with hover tooltip ---------- */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.05rem;
+  height: 1.05rem;
+  margin-left: 0.3rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--paper);
+  background: var(--accent);
+  border-radius: 50%;
+  cursor: help;
+  position: relative;
+  vertical-align: middle;
+  letter-spacing: 0;
+  transition: background 0.15s;
+}
+
+.info-icon:hover,
+.info-icon:focus {
+  background: #000;
+  outline: none;
+}
+
+.info-tooltip {
+  display: none;
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 320px;
+  max-width: 80vw;
+  padding: 0.7rem 0.9rem;
+  background: #1a1a1a;
+  color: #f5f5f5;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  line-height: 1.5;
+  z-index: 100;
+  text-align: left;
+  pointer-events: none;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+
+.info-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #1a1a1a;
+}
+
+.info-icon:hover .info-tooltip,
+.info-icon:focus .info-tooltip,
+.info-icon:focus-within .info-tooltip {
+  display: block;
 }
 
 .fig-placeholder,
@@ -252,28 +412,14 @@ h3 {
 
 .fig-chart .chart-container {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 5 / 3;
   padding: 0;
   background: transparent;
   border: none;
 }
 
-.fig-chart .formula {
-  margin: 0.65rem 0 0;
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  font-size: 0.84rem;
-  line-height: 1.5;
-  color: var(--muted);
-  text-align: center;
-}
-
-.fig-chart .formula sub {
-  font-size: 0.7em;
-  vertical-align: -0.15em;
-}
-
-/* Stacked summation: 5 above Σ, s=1 below Σ */
-.fig-chart .formula .big-sum {
+/* Stacked summation: 5 above Σ, s=1 below Σ. Used inside info-tooltip. */
+.big-sum {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -284,17 +430,16 @@ h3 {
   top: -0.05em;
 }
 
-.fig-chart .formula .big-sum .sigma-glyph {
+.big-sum .sigma-glyph {
   font-size: 1.55em;
   line-height: 0.85;
   font-weight: 400;
 }
 
-.fig-chart .formula .big-sum .lim {
+.big-sum .lim {
   font-size: 0.6em;
   line-height: 1;
   font-style: normal;
-  color: var(--ink);
 }
 
 .fig-canvas {
@@ -404,13 +549,21 @@ a:hover {
     border-top: 1px solid var(--rule-soft);
     padding-top: 1.2rem;
   }
+  .figures-row {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+  .figures-block-head.with-picker {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @media (max-width: 640px) {
   html { font-size: 16px; }
   .page { padding: 2rem 1.2rem 2rem; border: none; }
   h1 { font-size: 1.9rem; }
-  .figure-grid { grid-template-columns: 1fr; }
   .findings .entry.latest { padding-left: 0.9rem; }
   .findings ol li { padding-left: 1.9rem; }
+  .figures-block-head .block-title { font-size: 1.2rem; }
 }

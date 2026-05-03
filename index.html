@@ -83,60 +83,7 @@
           -->
         </section>
 
-        <section class="figures">
-          <h2>Figures</h2>
-          <div class="figure-grid">
-            <figure class="fig-chart">
-              <h3 class="fig-title">Distributional Distance</h3>
-              <div class="chart-container">
-                <canvas id="chart-l1"></canvas>
-              </div>
-              <p class="formula">
-                L<sub>1</sub> =
-                <span class="big-sum">
-                  <span class="lim">5</span>
-                  <span class="sigma-glyph">&Sigma;</span>
-                  <span class="lim">s=1</span>
-                </span>
-                |H(s) &minus; A(s)|,
-                where H(s) is the human histogram and A(s) is the AI histogram.
-              </p>
-            </figure>
-
-            <figure class="fig-chart">
-              <h3 class="fig-title">Correlation</h3>
-              <div class="chart-container">
-                <canvas id="chart-corr"></canvas>
-              </div>
-              <p class="formula">
-                Pearson correlation between AI's score and the mean human score.
-              </p>
-            </figure>
-
-            <figure class="fig-placeholder">
-              <div class="fig-canvas">
-                <span class="fig-label">Figure 3</span>
-                <span class="fig-coming">Interactive figure coming soon</span>
-              </div>
-              <figcaption>
-                Score distributions: humans versus frontier AI.
-                Supports Finding 1.
-              </figcaption>
-            </figure>
-
-            <figure class="fig-placeholder">
-              <div class="fig-canvas">
-                <span class="fig-label">Figure 4</span>
-                <span class="fig-coming">Interactive figure coming soon</span>
-              </div>
-              <figcaption>
-                Per-paper rankings: AI score versus mean human score.
-                Supports Finding 2.
-              </figcaption>
-            </figure>
-          </div>
-        </section>
-      </div>
+      </div><!-- /main-col -->
 
       <aside class="sidebar">
         <h3>Models covered</h3>
@@ -167,8 +114,92 @@
           </li>
         </ul>
       </aside>
-    </div>
-  </div>
+    </div><!-- /content-grid -->
+
+    <!-- ======================================================== -->
+    <!-- TRENDS: top two figures showing the across-model picture  -->
+    <!-- ======================================================== -->
+    <section class="figures-block trends">
+      <header class="figures-block-head">
+        <p class="block-eyebrow">Across the cohort</p>
+        <h2 class="block-title">Trends across model generations</h2>
+      </header>
+      <div class="figures-row">
+        <figure class="fig-chart">
+          <h3 class="fig-title">
+            L<sub>1</sub> Distributional Distance
+            <span class="info-icon" tabindex="0" aria-label="L1 definition">?
+              <span class="info-tooltip" role="tooltip">
+                L<sub>1</sub> =
+                <span class="big-sum">
+                  <span class="lim">5</span>
+                  <span class="sigma-glyph">&Sigma;</span>
+                  <span class="lim">s=1</span>
+                </span>
+                |H(s) &minus; A(s)|, where H(s) is the human score
+                histogram and A(s) is the AI score histogram.
+              </span>
+            </span>
+          </h3>
+          <div class="chart-container">
+            <canvas id="chart-l1"></canvas>
+          </div>
+        </figure>
+
+        <figure class="fig-chart">
+          <h3 class="fig-title">Correlation between AI and Human Scores</h3>
+          <div class="chart-container">
+            <canvas id="chart-corr"></canvas>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- DRILL-DOWN: bottom two figures, model-specific            -->
+    <!-- ======================================================== -->
+    <section class="figures-block drilldown">
+      <header class="figures-block-head with-picker">
+        <div class="figures-block-head-text">
+          <p class="block-eyebrow">Per-model detail</p>
+          <h2 class="block-title">Look inside one model</h2>
+        </div>
+        <div class="model-picker">
+          <label for="model-select">Model:</label>
+          <select id="model-select">
+            <option value="all" selected>All-model average</option>
+            <option value="opus-4.7">Anthropic Opus 4.7</option>
+            <option value="opus-4.6">Anthropic Opus 4.6</option>
+            <option value="opus-4.5">Anthropic Opus 4.5</option>
+            <option value="gpt-5.5">OpenAI GPT-5.5</option>
+            <option value="gpt-5.4">OpenAI GPT-5.4</option>
+            <option value="gpt-5.1">OpenAI GPT-5.1</option>
+          </select>
+        </div>
+      </header>
+      <div class="figures-row">
+        <figure class="fig-chart">
+          <h3 class="fig-title">
+            Score Distributions
+            <span class="fig-subtitle" id="hist-subtitle">All-model average vs human reference</span>
+          </h3>
+          <div class="chart-container">
+            <canvas id="chart-hist"></canvas>
+          </div>
+        </figure>
+
+        <figure class="fig-chart">
+          <h3 class="fig-title">
+            Score Heatmap
+            <span class="fig-subtitle" id="heatmap-subtitle">Where AI and humans agree (or don't)</span>
+          </h3>
+          <div class="chart-container">
+            <canvas id="chart-heatmap"></canvas>
+          </div>
+        </figure>
+      </div>
+    </section>
+  </div><!-- /page -->
 
   <footer>
     <p class="site-updated">
@@ -179,10 +210,10 @@
     </p>
   </footer>
 
-  <!-- Chart.js + date-fns adapter + annotation plugin (for reference lines) -->
+  <!-- Chart.js + plugins -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-matrix@2.0.1/dist/chartjs-chart-matrix.min.js"></script>
   <script src="charts.js"></script>
 </body>
 </html>
