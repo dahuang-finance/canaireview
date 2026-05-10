@@ -112,6 +112,28 @@ h1 {
   text-underline-offset: 3px;
 }
 
+/* ---------- Footnote ---------- */
+.fn-marker {
+  color: var(--muted);
+  text-decoration: none;
+  padding: 0 0.05em;
+}
+
+.fn-marker:hover { color: var(--ink); }
+
+.abstract .footnote {
+  margin: 0.9rem 0 0;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--rule-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.abstract .footnote .fn-mark {
+  margin-right: 0.25em;
+}
+
 /* ---------- Content grid (main + sidebar) ---------- */
 .content-grid {
   display: grid;
