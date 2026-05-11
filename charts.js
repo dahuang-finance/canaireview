@@ -365,9 +365,16 @@ const fmtDate = (d) => {
 };
 
 function pointsFor(vendor, metric) {
-  return TREND_DATA[vendor].map(m => ({
-    x: m.date, y: m[metric], name: m.name, key: m.key,
-  }));
+  return TREND_DATA[vendor].map((m) => {
+    const point = { x: m.date, y: m[metric], name: m.name, key: m.key };
+    // Include CI on each point if the metric has _lo / _hi values
+    // defined in TREND_DATA. Currently only `corr` has CIs.
+    if (m[`${metric}_lo`] !== undefined) {
+      point.ciLo = m[`${metric}_lo`];
+      point.ciHi = m[`${metric}_hi`];
+    }
+    return point;
+  });
 }
 
 function tooltipCallbacks(metricLabel) {
@@ -382,6 +389,9 @@ function tooltipCallbacks(metricLabel) {
       const r = item.raw;
       if (r.isRef) {
         return `${metricLabel} = ${r.y.toFixed(3)}  (95% CI [${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}])`;
+      }
+      if (r.ciLo !== undefined && r.ciHi !== undefined) {
+        return `${metricLabel} = ${r.y.toFixed(3)}  [95% CI ${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}]  (released ${fmtDate(r.x)})`;
       }
       return `${metricLabel} = ${r.y.toFixed(3)}  (released ${fmtDate(r.x)})`;
     },
@@ -429,10 +439,9 @@ function vendorOfKey(key) {
 //       (Per-vendor whiskers don't need pairing — they're drawn by the
 //       errorBarsPlugin which reads dataset visibility on every frame.)
 //
-// All visibility changes for a single click are applied atomically, then
-// committed with one chart.update() call. The 'show' / 'hide' update
-// modes drive a single synchronized fade across all affected datasets,
-// so the line and its band animate together.
+// Uses chart.hide() / chart.show() directly. These animate via the
+// chart's default duration (600ms). Multiple calls in the same tick are
+// batched by Chart.js into one animation frame.
 function lockedLegendOnClick(e, legendItem, legend) {
   const idx = legendItem.datasetIndex;
   const chart = legend.chart;
@@ -443,16 +452,20 @@ function lockedLegendOnClick(e, legendItem, legend) {
     }
   }
   const willBeVisible = !chart.isDatasetVisible(idx);
-  const toToggle = [idx];
   const mainLabel = chart.data.datasets[idx].label || "";
+
+  const toggleOne = (i) => {
+    if (willBeVisible) chart.show(i);
+    else chart.hide(i);
+  };
+
+  toggleOne(idx);
   if (mainLabel.startsWith("Human-to-human")) {
     chart.data.datasets.forEach((ds, i) => {
-      if (ds.label && ds.label.startsWith("_h2h_band")) toToggle.push(i);
+      if (ds.label && ds.label.startsWith("_h2h_band")) toggleOne(i);
     });
   }
-  toToggle.forEach((i) => chart.setDatasetVisibility(i, willBeVisible));
   legendItem.hidden = !willBeVisible;
-  chart.update(willBeVisible ? "show" : "hide");
 }
 
 // ============================================================
@@ -501,8 +514,13 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
             boxWidth: 8, boxHeight: 8, padding: 14,
             font: { size: 11 }, color: "#333",
             // Hide datasets whose label starts with "_" (CI band fills
-            // for the per-vendor error bands and the human-to-human band).
+            // for the human-to-human band, drawn at order=0).
             filter: (item) => !item.text.startsWith("_"),
+            // Pin legend display order to dataset-array order. Without
+            // this, Chart.js sorts legend items by dataset.order which
+            // we use for z-depth, so the visible legend can disagree
+            // with what a reader expects and clicks on the wrong thing.
+            sort: (a, b) => a.datasetIndex - b.datasetIndex,
           },
         },
         tooltip: {
