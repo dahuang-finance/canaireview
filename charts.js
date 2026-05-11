@@ -12,30 +12,40 @@
 // Data
 // ============================================================
 
-// Trend data. L1 = distributional distance to pooled human reference.
-// corr = Pearson r between AI score and a SINGLE randomly chosen human
-// reviewer (stacked over both reviewers per paper). Comparable on the
-// same scale to the inter-human r = 0.175 baseline drawn as a reference
-// line on the correlation chart.
+// Trend data. l1 = L1 distributional distance to pooled human reference.
+// corr = Pearson r between AI score and a single randomly chosen human
+// reviewer (one paper contributes both (ai, h1) and (ai, h2) rows).
+// corr_lo / corr_hi = 95% paper-clustered bootstrap CI (2000 reps).
+// All numbers from code/analysis/compute_ai_vs_single_human.py output
+// on n = 1,088-1,171 papers (varies by model) with two quality reviews.
 // Release dates verified via vendor announcements (Nov 2025 - Apr 2026).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.191 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.210 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.236 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.191, corr_lo: 0.145, corr_hi: 0.237 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.210, corr_lo: 0.166, corr_hi: 0.254 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.236, corr_lo: 0.192, corr_hi: 0.280 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.105 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.173 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.184 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.105, corr_lo: 0.059, corr_hi: 0.152 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.173, corr_lo: 0.126, corr_hi: 0.220 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.184, corr_lo: 0.139, corr_hi: 0.226 },
   ],
 };
 
-// Inter-human Pearson r reference line for the correlation chart.
+// Human-to-human Pearson r reference line for the correlation chart.
 // 0.175 = correlation between two random human reviewers on the same
-// paper, n = 1,224 papers with two quality reviews. Bootstrap 95% CI
-// [0.116, 0.230]. See code/analysis/compute_human_inter_reviewer_correlation.py.
-const INTER_HUMAN_R = 0.175;
+// paper (n = 1,224 papers with two quality reviews; 95% paper-clustered
+// bootstrap CI [0.116, 0.230]). See compute_human_inter_reviewer_correlation.py.
+const H2H_R    = 0.175;
+const H2H_R_LO = 0.116;
+const H2H_R_HI = 0.230;
+
+// Theoretical maximum for r(AI, single human) under the variance-
+// components model: an oracle AI that perfectly recovers true paper
+// quality would correlate with a randomly chosen single human at exactly
+// sqrt(H2H_R), because each human's score is paper signal + reviewer-
+// specific noise and only the paper part is predictable.
+const R_THEORETICAL_MAX = Math.sqrt(H2H_R);
 
 // Per-model histograms and 5x5 heatmaps (computed from cleaned_master joined
 // with all_v1_baseline.csv; see the code/make_paper_figures.py / direct python
@@ -202,18 +212,46 @@ const X_AXIS_TIME = {
   border: { color: "#bbb" },
 };
 
-const Y_AXIS_0_1 = {
+// Y-axis with semantic top / bottom labels instead of bare numbers.
+// Used by both trend charts; each chart passes its own min/max anchoring
+// the semantic poles (e.g., "no agreement" at 0, "theoretical maximum"
+// at sqrt(H2H_R) for the correlation chart).
+function makeYAxis({ min, max, topLabel, bottomLabel }) {
+  return {
+    min, max,
+    afterBuildTicks: function (scale) {
+      scale.ticks = [{ value: min }, { value: max }];
+    },
+    ticks: {
+      autoSkip: false,
+      padding: 8,
+      color: "#666",
+      font: { size: 10 },
+      maxRotation: 0,
+      callback: (v) => {
+        if (Math.abs(v - max) < 1e-6) return topLabel;
+        if (Math.abs(v - min) < 1e-6) return bottomLabel;
+        return "";
+      },
+    },
+    grid: { display: false },
+    border: { color: "#bbb" },
+  };
+}
+
+const Y_AXIS_L1 = makeYAxis({
   min: 0,
-  max: 1,
-  ticks: {
-    stepSize: 1,
-    callback: (v) => (v === 0 || v === 1) ? v.toString() : "",
-    padding: 8,
-    color: "#444",
-  },
-  grid: { display: false },
-  border: { color: "#bbb" },
-};
+  max: 2,
+  topLabel: "completely different",
+  bottomLabel: "identical to humans",
+});
+
+const Y_AXIS_CORR = makeYAxis({
+  min: 0,
+  max: R_THEORETICAL_MAX,
+  topLabel: "theoretical maximum",
+  bottomLabel: "no agreement",
+});
 
 // ============================================================
 // Helpers
@@ -273,28 +311,55 @@ function vendorOfKey(key) {
   return key.startsWith("opus") ? "opus" : "gpt";
 }
 
-// Custom legend onClick: blocks hiding the vendor whose model is selected.
+// Custom legend onClick. Two responsibilities:
+//   (1) Vendor lock: block hiding Opus or GPT if the dropdown highlights
+//       a model from that vendor.
+//   (2) Band pairing: when a main legend item is toggled, also toggle
+//       its associated CI-band datasets so the shaded area follows the
+//       line. Bands are matched by label-prefix convention (see
+//       BAND_PREFIX_BY_MAIN below).
+//
 // Uses chart.hide() / chart.show() (not setDatasetVisibility + update),
-// because those Chart.js helpers run a smooth fade-out / fade-in animation
-// rather than just popping the series off.
+// because those Chart.js helpers animate the transition instead of just
+// popping the series off.
+const BAND_PREFIX_BY_MAIN = {
+  "Anthropic Opus": "_opus_band",
+  "OpenAI GPT":     "_gpt_band",
+  // Human-to-human label includes the r value; match by `.startsWith`
+  // in the function below.
+};
+
 function lockedLegendOnClick(e, legendItem, legend) {
-  // Convention: dataset 0 = Opus, dataset 1 = GPT (in top charts).
-  // Dataset 2 (if present) is the inter-human reference line on chart-corr;
-  // let it toggle freely with no vendor lock.
   const idx = legendItem.datasetIndex;
   const chart = legend.chart;
+  // Vendor lock applies only to the Opus and GPT main datasets (indices 0/1).
   if (idx < 2) {
     const vendor = idx === 0 ? "opus" : "gpt";
     if (vendorOfKey(currentSelection) === vendor) {
-      return; // locked: do nothing
+      return;
     }
   }
-  if (chart.isDatasetVisible(idx)) {
-    chart.hide(idx);
-    legendItem.hidden = true;
-  } else {
+  const willBeVisible = !chart.isDatasetVisible(idx);
+  if (willBeVisible) {
     chart.show(idx);
     legendItem.hidden = false;
+  } else {
+    chart.hide(idx);
+    legendItem.hidden = true;
+  }
+  // Toggle paired CI band datasets.
+  const mainLabel = chart.data.datasets[idx].label;
+  let bandPrefix = BAND_PREFIX_BY_MAIN[mainLabel];
+  if (!bandPrefix && mainLabel.startsWith("Human-to-human")) {
+    bandPrefix = "_h2h_band";
+  }
+  if (bandPrefix) {
+    chart.data.datasets.forEach((ds, i) => {
+      if (ds.label && ds.label.startsWith(bandPrefix)) {
+        if (willBeVisible) chart.show(i);
+        else chart.hide(i);
+      }
+    });
   }
 }
 
@@ -302,7 +367,7 @@ function lockedLegendOnClick(e, legendItem, legend) {
 // Top row: line charts (L1, correlation)
 // ============================================================
 
-function buildLineChart(canvasId, metric, metricLabel, yMax) {
+function buildLineChart(canvasId, metric, metricLabel, yAxis) {
   return new Chart(document.getElementById(canvasId), {
     type: "line",
     data: {
@@ -314,6 +379,7 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
           pointStyle: SHAPES.opus,
           ...POINT_BASE,
           pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE.opus,
+          order: 2,
         },
         {
           label: "OpenAI GPT",
@@ -322,6 +388,7 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
           pointStyle: SHAPES.gpt,
           ...POINT_BASE,
           pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE.gpt,
+          order: 2,
         },
       ],
     },
@@ -341,6 +408,9 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
             usePointStyle: true,
             boxWidth: 8, boxHeight: 8, padding: 14,
             font: { size: 11 }, color: "#333",
+            // Hide datasets whose label starts with "_" (CI band fills
+            // for the per-vendor error bands and the human-to-human band).
+            filter: (item) => !item.text.startsWith("_"),
           },
         },
         tooltip: {
@@ -349,36 +419,107 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
           titleFont: { weight: "600", size: 12 },
           bodyFont: { size: 12 },
           callbacks: tooltipCallbacks(metricLabel),
+          // Same filter as the legend — bands have no `name` on their
+          // points and would render an empty tooltip row.
+          filter: (item) => !item.dataset.label.startsWith("_"),
         },
       },
-      scales: { x: X_AXIS_TIME, y: { ...Y_AXIS_0_1, max: yMax } },
+      scales: { x: X_AXIS_TIME, y: yAxis },
     },
   });
 }
 
-const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", 1);
-const chartCorr = buildLineChart("chart-corr", "corr", "r",  1);
+const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", Y_AXIS_L1);
+const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_AXIS_CORR);
 
-// Add a flat inter-human reference line to chart-corr only. Stretches across
-// the full x-range, dashed gray, no points, no tooltip — purely a benchmark.
-chartCorr.data.datasets.push({
-  label: `Inter-human r (${INTER_HUMAN_R.toFixed(2)})`,
-  data: [
-    { x: X_MIN, y: INTER_HUMAN_R },
-    { x: X_MAX, y: INTER_HUMAN_R },
-  ],
-  borderColor: "#888",
-  borderDash: [5, 4],
-  borderWidth: 1.4,
-  pointRadius: 0,
-  pointHoverRadius: 0,
-  pointStyle: "line",
-  fill: false,
-  spanGaps: true,
-  // Skip Chart.js's interactive event handling so hovering doesn't fire a
-  // tooltip for the reference line (it's not a data point).
-  interaction: { intersect: false },
-});
+// Append confidence bands and the human-to-human reference to chart-corr.
+//
+// Drawing order is controlled by `order`: lower = drawn first (background).
+// Bands get order=0 so they sit behind the main lines (order=2 set in
+// buildLineChart) and the reference line (order=1).
+//
+// Each band is a pair of datasets: an "upper" line that fills DOWN to a
+// "lower" line via `fill: '+1'`. The line strokes themselves are
+// transparent so only the filled area is visible.
+function bandPoints(metricKey, vendor) {
+  return TREND_DATA[vendor].map((m) => ({ x: m.date, y: m[metricKey] }));
+}
+
+const VENDOR_BAND_ALPHA = "26"; // ~15% alpha as hex (38/255)
+const H2H_BAND_FILL = "rgba(120, 120, 120, 0.14)";
+
+chartCorr.data.datasets.push(
+  // ----- Per-vendor CI bands -----
+  {
+    label: "_opus_band_upper",
+    data: bandPoints("corr_hi", "opus"),
+    borderColor: "transparent",
+    backgroundColor: COLORS.opus + VENDOR_BAND_ALPHA,
+    fill: "+1",
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    order: 0,
+  },
+  {
+    label: "_opus_band_lower",
+    data: bandPoints("corr_lo", "opus"),
+    borderColor: "transparent",
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    order: 0,
+  },
+  {
+    label: "_gpt_band_upper",
+    data: bandPoints("corr_hi", "gpt"),
+    borderColor: "transparent",
+    backgroundColor: COLORS.gpt + VENDOR_BAND_ALPHA,
+    fill: "+1",
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    order: 0,
+  },
+  {
+    label: "_gpt_band_lower",
+    data: bandPoints("corr_lo", "gpt"),
+    borderColor: "transparent",
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    order: 0,
+  },
+  // ----- Human-to-human reference band (95% CI) -----
+  {
+    label: "_h2h_band_upper",
+    data: [{ x: X_MIN, y: H2H_R_HI }, { x: X_MAX, y: H2H_R_HI }],
+    borderColor: "transparent",
+    backgroundColor: H2H_BAND_FILL,
+    fill: "+1",
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    order: 0,
+  },
+  {
+    label: "_h2h_band_lower",
+    data: [{ x: X_MIN, y: H2H_R_LO }, { x: X_MAX, y: H2H_R_LO }],
+    borderColor: "transparent",
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    order: 0,
+  },
+  // ----- Human-to-human reference line (visible, dashed) -----
+  {
+    label: `Human-to-human r (${H2H_R.toFixed(2)})`,
+    data: [{ x: X_MIN, y: H2H_R }, { x: X_MAX, y: H2H_R }],
+    borderColor: "#666",
+    borderDash: [5, 4],
+    borderWidth: 1.4,
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    pointStyle: "line",
+    fill: false,
+    spanGaps: true,
+    order: 1,
+  },
+);
 chartCorr.update();
 
 // ============================================================
