@@ -47,6 +47,23 @@ const H2H_R_HI = 0.230;
 // specific noise and only the paper part is predictable.
 const R_THEORETICAL_MAX = Math.sqrt(H2H_R);
 
+// Visual styling for the human-to-human reference and its CI band.
+// RGB / alpha kept as separate constants so the toggle-animation helper
+// can interpolate alpha without re-parsing the rgba string.
+const H2H_BAND_RGB   = "120, 120, 120";
+const H2H_BAND_ALPHA = 0.14;
+const H2H_BAND_FILL  = `rgba(${H2H_BAND_RGB}, ${H2H_BAND_ALPHA})`;
+const H2H_LINE_COLOR = "#666";
+
+// Legend-toggle animation duration. Matches the chart's default 600ms
+// transition (set in buildLineChart options) so the custom band fade
+// finishes at the same moment as Chart.js's built-in line fade.
+const TOGGLE_ANIM_MS = 600;
+
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+
 // Per-model histograms and 5x5 heatmaps (computed from cleaned_master joined
 // with all_v1_baseline.csv; see the code/make_paper_figures.py / direct python
 // dump that produced website/figures_data.json).
@@ -245,8 +262,8 @@ function makeYAxisConfig({ min, max, topLabel, bottomLabel, tickDecimals = 0 }) 
 
 const Y_CFG_L1 = makeYAxisConfig({
   min: 0,
-  max: 1,
-  topLabel: "very different from humans",
+  max: 2,
+  topLabel: "completely different from humans",
   bottomLabel: "identical to humans",
   tickDecimals: 0,
 });
@@ -431,17 +448,66 @@ function vendorOfKey(key) {
   return key.startsWith("opus") ? "opus" : "gpt";
 }
 
+// In-flight requestAnimationFrame id per chart, so a rapid second click
+// cancels the previous fade rather than queueing on top of it.
+const h2hAnimFrames = new WeakMap();
+
+// Drive the h2h CI band's fill opacity by hand, in sync with Chart.js's
+// own line-fade animation. Chart.js's built-in dataset hide/show
+// animates visible markers and line strokes nicely, but a fill-between
+// region disappears the instant the dataset's visible flag flips —
+// that's why "the band pops while the line fades" without this helper.
+function toggleH2HBand(chart, bandUpperIdx, bandLowerIdx, willBeVisible) {
+  const prev = h2hAnimFrames.get(chart);
+  if (prev) cancelAnimationFrame(prev);
+
+  // When showing, make both band datasets visible immediately and reset
+  // the upper one's alpha to 0 so the fade-in has somewhere to start.
+  if (willBeVisible) {
+    chart.setDatasetVisibility(bandUpperIdx, true);
+    chart.setDatasetVisibility(bandLowerIdx, true);
+    chart.data.datasets[bandUpperIdx].backgroundColor =
+      `rgba(${H2H_BAND_RGB}, 0)`;
+  }
+
+  const fromAlpha = willBeVisible ? 0 : H2H_BAND_ALPHA;
+  const toAlpha   = willBeVisible ? H2H_BAND_ALPHA : 0;
+  const startTime = performance.now();
+
+  function tick(now) {
+    const t = Math.min(1, (now - startTime) / TOGGLE_ANIM_MS);
+    const eased = easeOutCubic(t);
+    const alpha = fromAlpha + (toAlpha - fromAlpha) * eased;
+    chart.data.datasets[bandUpperIdx].backgroundColor =
+      `rgba(${H2H_BAND_RGB}, ${alpha})`;
+    chart.update("none");
+    if (t < 1) {
+      h2hAnimFrames.set(chart, requestAnimationFrame(tick));
+    } else {
+      // Reset alpha back to the canonical fill so the next show-cycle
+      // begins from a clean baseline; collapse visibility when hiding.
+      chart.data.datasets[bandUpperIdx].backgroundColor = H2H_BAND_FILL;
+      if (!willBeVisible) {
+        chart.setDatasetVisibility(bandUpperIdx, false);
+        chart.setDatasetVisibility(bandLowerIdx, false);
+      }
+      chart.update("none");
+      h2hAnimFrames.delete(chart);
+    }
+  }
+  h2hAnimFrames.set(chart, requestAnimationFrame(tick));
+}
+
 // Custom legend onClick. Two responsibilities:
 //   (1) Vendor lock: block hiding Opus or GPT if the dropdown highlights
 //       a model from that vendor.
 //   (2) H2H pairing: when the human-to-human main line is toggled, also
-//       toggle its CI-band datasets so the shaded band follows the line.
-//       (Per-vendor whiskers don't need pairing — they're drawn by the
-//       errorBarsPlugin which reads dataset visibility on every frame.)
-//
-// Uses chart.hide() / chart.show() directly. These animate via the
-// chart's default duration (600ms). Multiple calls in the same tick are
-// batched by Chart.js into one animation frame.
+//       fade the CI band in / out alongside it. The line uses Chart.js's
+//       normal show/hide animation; the band is driven by toggleH2HBand
+//       above. Both have matching 600ms durations and start in the same
+//       tick, so they finish in sync.
+//   (Per-vendor whiskers don't need pairing — they're drawn by the
+//   errorBarsPlugin which reads dataset visibility on every frame.)
 function lockedLegendOnClick(e, legendItem, legend) {
   const idx = legendItem.datasetIndex;
   const chart = legend.chart;
@@ -454,16 +520,21 @@ function lockedLegendOnClick(e, legendItem, legend) {
   const willBeVisible = !chart.isDatasetVisible(idx);
   const mainLabel = chart.data.datasets[idx].label || "";
 
-  const toggleOne = (i) => {
-    if (willBeVisible) chart.show(i);
-    else chart.hide(i);
-  };
+  // Animate the main dataset via Chart.js (handles line + markers).
+  if (willBeVisible) chart.show(idx);
+  else chart.hide(idx);
 
-  toggleOne(idx);
+  // For the h2h line, also fade the shaded CI band alongside it.
   if (mainLabel.startsWith("Human-to-human")) {
-    chart.data.datasets.forEach((ds, i) => {
-      if (ds.label && ds.label.startsWith("_h2h_band")) toggleOne(i);
-    });
+    const bandUpperIdx = chart.data.datasets.findIndex(
+      (ds) => ds.label === "_h2h_band_upper"
+    );
+    const bandLowerIdx = chart.data.datasets.findIndex(
+      (ds) => ds.label === "_h2h_band_lower"
+    );
+    if (bandUpperIdx !== -1 && bandLowerIdx !== -1) {
+      toggleH2HBand(chart, bandUpperIdx, bandLowerIdx, willBeVisible);
+    }
   }
   legendItem.hidden = !willBeVisible;
 }
@@ -550,7 +621,6 @@ const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
 //       band IS the right representation here)
 //   (iii) human-to-human reference line, densified with hit-points so
 //        hovering anywhere along it fires a tooltip
-const H2H_BAND_FILL = "rgba(120, 120, 120, 0.14)";
 
 // Whiskers plugin config (dataset indices 0/1 = opus/gpt main lines).
 chartCorr.options.plugins.errorBars = {
@@ -597,7 +667,7 @@ chartCorr.data.datasets.push(
     data: flatLinePoints(H2H_R, 40, {
       isRef: true, ciLo: H2H_R_LO, ciHi: H2H_R_HI,
     }),
-    borderColor: "#666",
+    borderColor: H2H_LINE_COLOR,
     borderDash: [5, 4],
     borderWidth: 1.4,
     pointRadius: 0,
