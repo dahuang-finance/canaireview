@@ -212,46 +212,64 @@ const X_AXIS_TIME = {
   border: { color: "#bbb" },
 };
 
-// Y-axis with semantic top / bottom labels instead of bare numbers.
-// Used by both trend charts; each chart passes its own min/max anchoring
-// the semantic poles (e.g., "no agreement" at 0, "theoretical maximum"
-// at sqrt(H2H_R) for the correlation chart).
-function makeYAxis({ min, max, topLabel, bottomLabel }) {
+// Y-axis with semantic top / bottom poles. The pole labels are drawn
+// INSIDE the chart area as corner annotations (see cornerLabelsPlugin
+// below) rather than as tick labels, so they don't eat horizontal margin
+// on the left side. The axis itself is minimal: no tick labels, no grid.
+function makeYAxisConfig({ min, max, topLabel, bottomLabel }) {
   return {
-    min, max,
-    afterBuildTicks: function (scale) {
-      scale.ticks = [{ value: min }, { value: max }];
+    axis: {
+      min, max,
+      ticks: { display: false, padding: 0 },
+      grid: { display: false },
+      border: { color: "#bbb" },
     },
-    ticks: {
-      autoSkip: false,
-      padding: 8,
-      color: "#666",
-      font: { size: 10 },
-      maxRotation: 0,
-      callback: (v) => {
-        if (Math.abs(v - max) < 1e-6) return topLabel;
-        if (Math.abs(v - min) < 1e-6) return bottomLabel;
-        return "";
-      },
-    },
-    grid: { display: false },
-    border: { color: "#bbb" },
+    corner: { topLabel, bottomLabel },
   };
 }
 
-const Y_AXIS_L1 = makeYAxis({
+const Y_CFG_L1 = makeYAxisConfig({
   min: 0,
   max: 2,
   topLabel: "completely different",
   bottomLabel: "identical to humans",
 });
 
-const Y_AXIS_CORR = makeYAxis({
+const Y_CFG_CORR = makeYAxisConfig({
   min: 0,
   max: R_THEORETICAL_MAX,
   topLabel: "theoretical maximum",
   bottomLabel: "no agreement",
 });
+
+// Plugin: draws the top and bottom semantic-pole labels in the corners
+// of the chart's plot area, hugging the left edge. Uses italic gray text
+// so it reads as an annotation, not a data label.
+const cornerLabelsPlugin = {
+  id: "cornerLabels",
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins.cornerLabels;
+    if (!cfg) return;
+    const yScale = chart.scales.y;
+    const xScale = chart.scales.x;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = "italic 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
+    ctx.fillStyle = "#888";
+    if (cfg.topLabel) {
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      ctx.fillText(cfg.topLabel, xScale.left + 4, yScale.top + 2);
+    }
+    if (cfg.bottomLabel) {
+      ctx.textAlign = "left";
+      ctx.textBaseline = "bottom";
+      ctx.fillText(cfg.bottomLabel, xScale.left + 4, yScale.bottom - 2);
+    }
+    ctx.restore();
+  },
+};
+Chart.register(cornerLabelsPlugin);
 
 // ============================================================
 // Helpers
@@ -367,7 +385,7 @@ function lockedLegendOnClick(e, legendItem, legend) {
 // Top row: line charts (L1, correlation)
 // ============================================================
 
-function buildLineChart(canvasId, metric, metricLabel, yAxis) {
+function buildLineChart(canvasId, metric, metricLabel, yCfg) {
   return new Chart(document.getElementById(canvasId), {
     type: "line",
     data: {
@@ -423,14 +441,15 @@ function buildLineChart(canvasId, metric, metricLabel, yAxis) {
           // points and would render an empty tooltip row.
           filter: (item) => !item.dataset.label.startsWith("_"),
         },
+        cornerLabels: yCfg.corner,
       },
-      scales: { x: X_AXIS_TIME, y: yAxis },
+      scales: { x: X_AXIS_TIME, y: yCfg.axis },
     },
   });
 }
 
-const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", Y_AXIS_L1);
-const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_AXIS_CORR);
+const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", Y_CFG_L1);
+const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
 
 // Append confidence bands and the human-to-human reference to chart-corr.
 //
@@ -507,7 +526,7 @@ chartCorr.data.datasets.push(
   },
   // ----- Human-to-human reference line (visible, dashed) -----
   {
-    label: `Human-to-human r (${H2H_R.toFixed(2)})`,
+    label: `Human-to-human correlation (${H2H_R.toFixed(3)})`,
     data: [{ x: X_MIN, y: H2H_R }, { x: X_MAX, y: H2H_R }],
     borderColor: "#666",
     borderDash: [5, 4],
