@@ -102,8 +102,12 @@
                 released Opus 4.5 &rarr; 4.6 &rarr; 4.7. Across the two
                 lineages, the distributional distance to the human
                 reference (the L1 distance between the two score
-                histograms) fell by an average of 47%, and the
-                correlation rose by an average of 55%.
+                histograms) fell by an average of 47%. Over the same
+                window, per-paper correlation with a single human
+                reviewer rose from 0.11 (GPT&#8209;5.1) and 0.19 (Opus
+                4.5) to 0.18 (GPT&#8209;5.5) and 0.24 (Opus 4.7),
+                moving both lineages to at or above the inter-human
+                benchmark of 0.18. No saturation yet.
               </li>
             </ol>
           </article>
@@ -187,7 +191,20 @@
         </figure>
 
         <figure class="fig-chart">
-          <h3 class="fig-title">Correlation between AI and Human Scores</h3>
+          <h3 class="fig-title">
+            Correlation between AI and a Single Human Reviewer<button
+              class="info-trigger" type="button" tabindex="0"
+              aria-label="What is the inter-human reference line?"><span aria-hidden="true">?</span>
+              <span class="info-tooltip" role="tooltip">
+                Pearson <em>r</em> between the AI's score for each paper
+                and a randomly chosen one of the two human reviewers'
+                scores on the same paper (stacked over both reviewers).
+                The dashed line at 0.18 is the inter-human benchmark:
+                Pearson <em>r</em> between the two human reviewers'
+                scores on the same paper.
+              </span>
+            </button>
+          </h3>
           <div class="chart-container">
             <canvas id="chart-corr"></canvas>
           </div>

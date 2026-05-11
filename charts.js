@@ -12,20 +12,30 @@
 // Data
 // ============================================================
 
-// Trend data (per-model L1 + Pearson correlation).
+// Trend data. L1 = distributional distance to pooled human reference.
+// corr = Pearson r between AI score and a SINGLE randomly chosen human
+// reviewer (stacked over both reviewers per paper). Comparable on the
+// same scale to the inter-human r = 0.175 baseline drawn as a reference
+// line on the correlation chart.
 // Release dates verified via vendor announcements (Nov 2025 - Apr 2026).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.234 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.267 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.310 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.191 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.210 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.236 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.133 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.208 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.235 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.105 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.173 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.184 },
   ],
 };
+
+// Inter-human Pearson r reference line for the correlation chart.
+// 0.175 = correlation between two random human reviewers on the same
+// paper, n = 1,224 papers with two quality reviews. Bootstrap 95% CI
+// [0.116, 0.230]. See code/analysis/compute_human_inter_reviewer_correlation.py.
+const INTER_HUMAN_R = 0.175;
 
 // Per-model histograms and 5x5 heatmaps (computed from cleaned_master joined
 // with all_v1_baseline.csv; see the code/make_paper_figures.py / direct python
@@ -268,13 +278,17 @@ function vendorOfKey(key) {
 // because those Chart.js helpers run a smooth fade-out / fade-in animation
 // rather than just popping the series off.
 function lockedLegendOnClick(e, legendItem, legend) {
-  // Convention: dataset 0 = Opus, dataset 1 = GPT (in top charts)
-  const vendor = legendItem.datasetIndex === 0 ? "opus" : "gpt";
-  if (vendorOfKey(currentSelection) === vendor) {
-    return; // locked: do nothing
-  }
-  const chart = legend.chart;
+  // Convention: dataset 0 = Opus, dataset 1 = GPT (in top charts).
+  // Dataset 2 (if present) is the inter-human reference line on chart-corr;
+  // let it toggle freely with no vendor lock.
   const idx = legendItem.datasetIndex;
+  const chart = legend.chart;
+  if (idx < 2) {
+    const vendor = idx === 0 ? "opus" : "gpt";
+    if (vendorOfKey(currentSelection) === vendor) {
+      return; // locked: do nothing
+    }
+  }
   if (chart.isDatasetVisible(idx)) {
     chart.hide(idx);
     legendItem.hidden = true;
@@ -344,6 +358,28 @@ function buildLineChart(canvasId, metric, metricLabel, yMax) {
 
 const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", 1);
 const chartCorr = buildLineChart("chart-corr", "corr", "r",  1);
+
+// Add a flat inter-human reference line to chart-corr only. Stretches across
+// the full x-range, dashed gray, no points, no tooltip — purely a benchmark.
+chartCorr.data.datasets.push({
+  label: `Inter-human r (${INTER_HUMAN_R.toFixed(2)})`,
+  data: [
+    { x: X_MIN, y: INTER_HUMAN_R },
+    { x: X_MAX, y: INTER_HUMAN_R },
+  ],
+  borderColor: "#888",
+  borderDash: [5, 4],
+  borderWidth: 1.4,
+  pointRadius: 0,
+  pointHoverRadius: 0,
+  pointStyle: "line",
+  fill: false,
+  spanGaps: true,
+  // Skip Chart.js's interactive event handling so hovering doesn't fire a
+  // tooltip for the reference line (it's not a data point).
+  interaction: { intersect: false },
+});
+chartCorr.update();
 
 // ============================================================
 // Highlight selected model in top charts
