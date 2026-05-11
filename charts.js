@@ -497,6 +497,12 @@ function getH2HIntent(chart) {
 // own line-fade for the corresponding vendor dataset, on the same 600ms
 // ease-out curve, so the whiskers finish vanishing at the exact moment
 // the marker + line do.
+//
+// IMPORTANT: this tick does NOT call chart.update(). Chart.js's own
+// show/hide animation on the line dataset already redraws the chart at
+// 60 fps, and the errorBarsPlugin reads the latest whisker opacity on
+// every redraw. Calling chart.update("none") from here would cancel
+// Chart.js's animation each frame and the line would just snap.
 function fadeWhiskers(chart, vendorIdx, willBeVisible) {
   let animMap = whiskerAnimFrames.get(chart);
   if (!animMap) {
@@ -514,11 +520,15 @@ function fadeWhiskers(chart, vendorIdx, willBeVisible) {
     const eased = easeOutCubic(t);
     const alpha = fromAlpha + (toAlpha - fromAlpha) * eased;
     setWhiskerOpacity(chart, vendorIdx, alpha);
-    chart.update("none");
     if (t < 1) {
       animMap[vendorIdx] = requestAnimationFrame(tick);
     } else {
       delete animMap[vendorIdx];
+      // Single final redraw to lock the end state in, in case Chart.js's
+      // own line animation finished a hair earlier (no animation = no
+      // auto-redraw, and we'd otherwise be stuck on the second-to-last
+      // opacity value).
+      chart.update("none");
     }
   }
   animMap[vendorIdx] = requestAnimationFrame(tick);
