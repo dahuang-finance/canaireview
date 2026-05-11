@@ -16,29 +16,32 @@
 // corr = Pearson r between AI score and a single randomly chosen human
 // reviewer (one paper contributes both (ai, h1) and (ai, h2) rows).
 // corr_lo / corr_hi = 95% paper-clustered bootstrap CI (2000 reps).
-// All numbers from code/analysis/compute_ai_vs_single_human.py output
-// on n = 1,088-1,171 papers (varies by model) with two quality reviews.
+// All numbers from code/analysis/compute_ai_vs_single_human_raw.py
+// output on raw 2-reviewer sample (no pure-fit comment classifier
+// applied — consistent with the website's "no written comment" claim).
+// n ranges from 1,799 to 1,946 papers depending on the model.
 // Release dates verified via vendor announcements (Nov 2025 - Apr 2026).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.191, corr_lo: 0.145, corr_hi: 0.237 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.210, corr_lo: 0.166, corr_hi: 0.254 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.236, corr_lo: 0.192, corr_hi: 0.280 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.105, corr_lo: 0.059, corr_hi: 0.152 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.173, corr_lo: 0.126, corr_hi: 0.220 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.184, corr_lo: 0.139, corr_hi: 0.226 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209 },
   ],
 };
 
 // Human-to-human Pearson r reference line for the correlation chart.
-// 0.175 = correlation between two random human reviewers on the same
-// paper (n = 1,224 papers with two quality reviews; 95% paper-clustered
-// bootstrap CI [0.116, 0.230]). See compute_human_inter_reviewer_correlation.py.
-const H2H_R    = 0.175;
-const H2H_R_LO = 0.116;
-const H2H_R_HI = 0.230;
+// 0.189 = correlation between two random human reviewers on the same
+// paper (n = 2,029 papers with two raw reviews; 95% paper-clustered
+// bootstrap CI [0.145, 0.231]). See
+// code/analysis/compute_human_inter_reviewer_correlation_raw.py.
+const H2H_R    = 0.189;
+const H2H_R_LO = 0.145;
+const H2H_R_HI = 0.231;
 
 // Theoretical maximum for r(AI, single human) under the variance-
 // components model: an oracle AI that perfectly recovers true paper
