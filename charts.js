@@ -305,14 +305,43 @@ const cornerLabelsPlugin = {
 };
 Chart.register(cornerLabelsPlugin);
 
+// Per-chart, per-vendor whisker opacity. Lives outside Chart.js so the
+// errorBarsPlugin can multiply it into the stroke alpha each frame; the
+// fadeWhiskers helper interpolates it on legend toggles.
+const whiskerOpacityState = new WeakMap();
+
+function getWhiskerOpacity(chart, vendorIdx) {
+  const map = whiskerOpacityState.get(chart);
+  if (!map || map[vendorIdx] === undefined) return 1.0;
+  return map[vendorIdx];
+}
+
+function setWhiskerOpacity(chart, vendorIdx, alpha) {
+  let map = whiskerOpacityState.get(chart);
+  if (!map) {
+    map = {};
+    whiskerOpacityState.set(chart, map);
+  }
+  map[vendorIdx] = alpha;
+}
+
+// Combine a "#rrggbb" base color with an alpha into a usable rgba string.
+function colorWithAlpha(hex, alpha) {
+  if (!hex || !hex.startsWith("#") || hex.length !== 7) return hex;
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // Plugin: draws per-marker error bars (whiskers) instead of a continuous
 // band. A band misleadingly implies the CI is a continuous function of
 // time, but we only have CIs at discrete release points. Whiskers at each
 // marker spanning [lo, hi] are the honest representation.
 //
-// The plugin reads dataset visibility (via mainDatasetIndex) so toggling
-// the main line in the legend also toggles its whiskers automatically,
-// keeping them visually synced.
+// Stroke alpha is multiplied by the per-vendor whisker opacity from
+// whiskerOpacityState, so fading the line via the legend smoothly fades
+// the whiskers on the exact same 600ms curve (driven by fadeWhiskers).
 const errorBarsPlugin = {
   id: "errorBars",
   afterDatasetsDraw(chart) {
@@ -322,11 +351,12 @@ const errorBarsPlugin = {
     const yScale = chart.scales.y;
     const ctx = chart.ctx;
     cfg.series.forEach(({ points, color, mainDatasetIndex }) => {
-      if (mainDatasetIndex !== undefined && !chart.isDatasetVisible(mainDatasetIndex)) {
-        return;
-      }
+      const opacity = mainDatasetIndex !== undefined
+        ? getWhiskerOpacity(chart, mainDatasetIndex)
+        : 1.0;
+      if (opacity <= 0.001) return;
       ctx.save();
-      ctx.strokeStyle = color;
+      ctx.strokeStyle = colorWithAlpha(color, opacity);
       ctx.lineWidth = 1.4;
       ctx.lineCap = "round";
       const cap = 4;
@@ -334,17 +364,14 @@ const errorBarsPlugin = {
         const x = xScale.getPixelForValue(new Date(p.x).getTime());
         const yLo = yScale.getPixelForValue(p.lo);
         const yHi = yScale.getPixelForValue(p.hi);
-        // vertical stem
         ctx.beginPath();
         ctx.moveTo(x, yLo);
         ctx.lineTo(x, yHi);
         ctx.stroke();
-        // top cap
         ctx.beginPath();
         ctx.moveTo(x - cap, yHi);
         ctx.lineTo(x + cap, yHi);
         ctx.stroke();
-        // bottom cap
         ctx.beginPath();
         ctx.moveTo(x - cap, yLo);
         ctx.lineTo(x + cap, yLo);
@@ -448,48 +475,129 @@ function vendorOfKey(key) {
   return key.startsWith("opus") ? "opus" : "gpt";
 }
 
-// In-flight requestAnimationFrame id per chart, so a rapid second click
-// cancels the previous fade rather than queueing on top of it.
+// In-flight requestAnimationFrame ids — one per chart for the h2h set,
+// one per (chart, vendor) for the whiskers. Used to cancel a previous
+// fade when a rapid second click comes in.
 const h2hAnimFrames = new WeakMap();
+const whiskerAnimFrames = new WeakMap();
 
-// Drive the h2h CI band's fill opacity by hand, in sync with Chart.js's
-// own line-fade animation. Chart.js's built-in dataset hide/show
-// animates visible markers and line strokes nicely, but a fill-between
-// region disappears the instant the dataset's visible flag flips —
-// that's why "the band pops while the line fades" without this helper.
-function toggleH2HBand(chart, bandUpperIdx, bandLowerIdx, willBeVisible) {
-  const prev = h2hAnimFrames.get(chart);
-  if (prev) cancelAnimationFrame(prev);
+// Logical visibility intent for the h2h reference set. Needed because
+// the line dataset stays "visible" during a hide animation (we delay the
+// real meta.hidden flip until the fade completes); if we read the dataset
+// state directly, a click mid-fade would not know the right direction to
+// flip. Defaults to true (visible on first load).
+const h2hIntendedVisible = new WeakMap();
 
-  // When showing, make both band datasets visible immediately and reset
-  // the upper one's alpha to 0 so the fade-in has somewhere to start.
-  if (willBeVisible) {
-    chart.setDatasetVisibility(bandUpperIdx, true);
-    chart.setDatasetVisibility(bandLowerIdx, true);
-    chart.data.datasets[bandUpperIdx].backgroundColor =
-      `rgba(${H2H_BAND_RGB}, 0)`;
+function getH2HIntent(chart) {
+  const v = h2hIntendedVisible.get(chart);
+  return v === undefined ? true : v;
+}
+
+// Animate per-vendor whisker opacity. Runs in parallel with Chart.js's
+// own line-fade for the corresponding vendor dataset, on the same 600ms
+// ease-out curve, so the whiskers finish vanishing at the exact moment
+// the marker + line do.
+function fadeWhiskers(chart, vendorIdx, willBeVisible) {
+  let animMap = whiskerAnimFrames.get(chart);
+  if (!animMap) {
+    animMap = {};
+    whiskerAnimFrames.set(chart, animMap);
   }
+  if (animMap[vendorIdx]) cancelAnimationFrame(animMap[vendorIdx]);
 
-  const fromAlpha = willBeVisible ? 0 : H2H_BAND_ALPHA;
-  const toAlpha   = willBeVisible ? H2H_BAND_ALPHA : 0;
+  const fromAlpha = getWhiskerOpacity(chart, vendorIdx);
+  const toAlpha   = willBeVisible ? 1 : 0;
   const startTime = performance.now();
 
   function tick(now) {
     const t = Math.min(1, (now - startTime) / TOGGLE_ANIM_MS);
     const eased = easeOutCubic(t);
     const alpha = fromAlpha + (toAlpha - fromAlpha) * eased;
-    chart.data.datasets[bandUpperIdx].backgroundColor =
-      `rgba(${H2H_BAND_RGB}, ${alpha})`;
+    setWhiskerOpacity(chart, vendorIdx, alpha);
+    chart.update("none");
+    if (t < 1) {
+      animMap[vendorIdx] = requestAnimationFrame(tick);
+    } else {
+      delete animMap[vendorIdx];
+    }
+  }
+  animMap[vendorIdx] = requestAnimationFrame(tick);
+}
+
+// Animate the h2h reference set (dashed line + shaded CI band) end-to-end
+// by hand. Chart.js's chart.hide() flips the dataset hidden flag right
+// away and stops drawing, so a dashed line "doesn't fade — it just blinks
+// out." Instead we keep the dataset visible throughout the animation,
+// drive borderColor / backgroundColor alpha externally, and only flip
+// the real visibility flag at the very end (so the legend strikethrough
+// settles a hair after the fade — close enough to feel synchronized).
+function toggleH2HSet(chart, willBeVisible) {
+  const prev = h2hAnimFrames.get(chart);
+  if (prev) cancelAnimationFrame(prev);
+
+  const lineIdx = chart.data.datasets.findIndex(
+    (ds) => ds.label && ds.label.startsWith("Human-to-human")
+  );
+  const bandUpperIdx = chart.data.datasets.findIndex(
+    (ds) => ds.label === "_h2h_band_upper"
+  );
+  const bandLowerIdx = chart.data.datasets.findIndex(
+    (ds) => ds.label === "_h2h_band_lower"
+  );
+  if (lineIdx === -1) return;
+
+  h2hIntendedVisible.set(chart, willBeVisible);
+
+  // On show: bring datasets into visibility immediately so subsequent
+  // draws actually run, but start their colors at zero alpha so the
+  // fade-in has somewhere to come from.
+  if (willBeVisible) {
+    chart.setDatasetVisibility(lineIdx, true);
+    if (bandUpperIdx !== -1) chart.setDatasetVisibility(bandUpperIdx, true);
+    if (bandLowerIdx !== -1) chart.setDatasetVisibility(bandLowerIdx, true);
+    chart.data.datasets[lineIdx].borderColor = "rgba(102, 102, 102, 0)";
+    if (bandUpperIdx !== -1) {
+      chart.data.datasets[bandUpperIdx].backgroundColor =
+        `rgba(${H2H_BAND_RGB}, 0)`;
+    }
+  }
+
+  // Read CURRENT alpha out of the dataset (handles mid-animation cancel
+  // cleanly — pick up where we left off rather than snapping back to 0/1).
+  const currentLineRgba = chart.data.datasets[lineIdx].borderColor;
+  const currentBandRgba = bandUpperIdx !== -1
+    ? chart.data.datasets[bandUpperIdx].backgroundColor
+    : null;
+  const fromLineAlpha = alphaFromRgba(currentLineRgba, 1);
+  const fromBandAlpha = alphaFromRgba(currentBandRgba, H2H_BAND_ALPHA);
+  const toLineAlpha   = willBeVisible ? 1 : 0;
+  const toBandAlpha   = willBeVisible ? H2H_BAND_ALPHA : 0;
+  const startTime = performance.now();
+
+  function tick(now) {
+    const t = Math.min(1, (now - startTime) / TOGGLE_ANIM_MS);
+    const eased = easeOutCubic(t);
+    const lineAlpha = fromLineAlpha + (toLineAlpha - fromLineAlpha) * eased;
+    const bandAlpha = fromBandAlpha + (toBandAlpha - fromBandAlpha) * eased;
+    chart.data.datasets[lineIdx].borderColor =
+      `rgba(102, 102, 102, ${lineAlpha})`;
+    if (bandUpperIdx !== -1) {
+      chart.data.datasets[bandUpperIdx].backgroundColor =
+        `rgba(${H2H_BAND_RGB}, ${bandAlpha})`;
+    }
     chart.update("none");
     if (t < 1) {
       h2hAnimFrames.set(chart, requestAnimationFrame(tick));
     } else {
-      // Reset alpha back to the canonical fill so the next show-cycle
-      // begins from a clean baseline; collapse visibility when hiding.
-      chart.data.datasets[bandUpperIdx].backgroundColor = H2H_BAND_FILL;
+      // Reset to canonical colors so a future show starts cleanly.
+      chart.data.datasets[lineIdx].borderColor = H2H_LINE_COLOR;
+      if (bandUpperIdx !== -1) {
+        chart.data.datasets[bandUpperIdx].backgroundColor = H2H_BAND_FILL;
+      }
       if (!willBeVisible) {
-        chart.setDatasetVisibility(bandUpperIdx, false);
-        chart.setDatasetVisibility(bandLowerIdx, false);
+        chart.setDatasetVisibility(lineIdx, false);
+        if (bandUpperIdx !== -1) chart.setDatasetVisibility(bandUpperIdx, false);
+        if (bandLowerIdx !== -1) chart.setDatasetVisibility(bandLowerIdx, false);
       }
       chart.update("none");
       h2hAnimFrames.delete(chart);
@@ -498,16 +606,24 @@ function toggleH2HBand(chart, bandUpperIdx, bandLowerIdx, willBeVisible) {
   h2hAnimFrames.set(chart, requestAnimationFrame(tick));
 }
 
-// Custom legend onClick. Two responsibilities:
-//   (1) Vendor lock: block hiding Opus or GPT if the dropdown highlights
-//       a model from that vendor.
-//   (2) H2H pairing: when the human-to-human main line is toggled, also
-//       fade the CI band in / out alongside it. The line uses Chart.js's
-//       normal show/hide animation; the band is driven by toggleH2HBand
-//       above. Both have matching 600ms durations and start in the same
-//       tick, so they finish in sync.
-//   (Per-vendor whiskers don't need pairing — they're drawn by the
-//   errorBarsPlugin which reads dataset visibility on every frame.)
+// Extract the alpha channel out of an "rgba(r, g, b, a)" string. Used so
+// mid-animation cancels can resume from the current displayed alpha
+// instead of snapping back to the canonical start value.
+function alphaFromRgba(rgba, fallback) {
+  if (typeof rgba !== "string") return fallback;
+  const m = rgba.match(/rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*([\d.]+)\s*\)/);
+  if (m) return parseFloat(m[1]);
+  return fallback;
+}
+
+// Custom legend onClick. Three responsibilities:
+//   (1) Vendor lock: block hiding Opus / GPT if the dropdown is currently
+//       highlighting a model from that vendor.
+//   (2) For Opus / GPT (idx 0/1): use Chart.js's normal show/hide for
+//       line + markers, then fade the whiskers in parallel.
+//   (3) For the h2h line (idx 4): fully manual fade for both the dashed
+//       line and the CI band, because Chart.js's dataset hide is too
+//       abrupt for a stroke-only / fill-only dataset.
 function lockedLegendOnClick(e, legendItem, legend) {
   const idx = legendItem.datasetIndex;
   const chart = legend.chart;
@@ -517,26 +633,22 @@ function lockedLegendOnClick(e, legendItem, legend) {
       return;
     }
   }
-  const willBeVisible = !chart.isDatasetVisible(idx);
   const mainLabel = chart.data.datasets[idx].label || "";
 
-  // Animate the main dataset via Chart.js (handles line + markers).
+  if (mainLabel.startsWith("Human-to-human")) {
+    const willBeVisible = !getH2HIntent(chart);
+    legendItem.hidden = !willBeVisible;
+    toggleH2HSet(chart, willBeVisible);
+    return;
+  }
+
+  const willBeVisible = !chart.isDatasetVisible(idx);
   if (willBeVisible) chart.show(idx);
   else chart.hide(idx);
-
-  // For the h2h line, also fade the shaded CI band alongside it.
-  if (mainLabel.startsWith("Human-to-human")) {
-    const bandUpperIdx = chart.data.datasets.findIndex(
-      (ds) => ds.label === "_h2h_band_upper"
-    );
-    const bandLowerIdx = chart.data.datasets.findIndex(
-      (ds) => ds.label === "_h2h_band_lower"
-    );
-    if (bandUpperIdx !== -1 && bandLowerIdx !== -1) {
-      toggleH2HBand(chart, bandUpperIdx, bandLowerIdx, willBeVisible);
-    }
-  }
   legendItem.hidden = !willBeVisible;
+  if (idx === 0 || idx === 1) {
+    fadeWhiskers(chart, idx, willBeVisible);
+  }
 }
 
 // ============================================================
