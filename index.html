@@ -50,29 +50,50 @@
 
           <article class="entry latest">
             <p class="updated">
-              Updated on <time datetime="2026-05-03">May 3, 2026</time>
+              Updated on <time datetime="2026-05-11">May 11, 2026</time>
             </p>
             <ol>
               <li>
-                <strong>AI struggles to identify exceptional papers.</strong>
-                Human reviewers use the full 1 to 5 range and give the top
-                score to 12% of papers. AI models give middle, uncontroversial
-                scores of 2 or 3 to 74&ndash;80% of papers and almost never
-                give the top score. Prompting AI to be more or less critical
-                does not solve the problem, since it just shifts the whole
-                distribution without singling out the exceptional papers.
+                <strong>AI doesn't use the extremes of the scale.</strong>
+                Humans use the full 1&ndash;5 range and give the top score
+                (1) to 12% of papers. The best frontier AI models pile
+                74&ndash;80% of their scores at 2 or 3 and give a top
+                score to fewer than 4% of papers. Prompting AI to be more
+                or less critical does not solve this &mdash; it just
+                shifts the whole distribution without singling out
+                exceptional papers.
               </li>
               <li>
-                <strong>AI's rankings track human rankings only weakly.</strong>
-                The highest correlation between AI scores and human scores
-                is only 0.31, from Opus 4.7 (0 = random ranking, 1 = complete
-                agreement). Who is right when they disagree? Using future
-                citations as a quality proxy, humans clearly beat AI at
-                flagging both exceptional papers and clear weak papers; AI's
-                predictive advantage is concentrated in the middle of the
-                distribution, where human reviewers tend to give middling
-                scores and the human ranking is largely flat with respect
-                to citations.
+                <strong>Counterintuitively, frontier AI agrees with a
+                single human reviewer about as well as two humans agree
+                with each other.</strong>
+                Opus 4.7's score correlates with a randomly chosen human
+                reviewer at 0.24. Two randomly chosen human reviewers
+                correlate with each other at 0.18. So the best AI today
+                is at or modestly above human-reviewer level on per-paper
+                agreement &mdash; but this is a recent development, with
+                the previous-generation GPT&#8209;5.1 still sitting at
+                0.10. Agreement is also a narrow test on this task: only
+                about 18% of any reviewer's rating is shared signal
+                across reviewers, and the remaining 82% is the
+                reviewer's own idiosyncratic signal &mdash; taste,
+                priors, what they happened to find compelling. So the
+                more revealing question is not who agrees with whom, but
+                whose evaluations actually track the papers' future
+                impact.
+              </li>
+              <li>
+                <strong>Humans correctly identify the top and bottom
+                papers; AI's edge is in the middle.</strong>
+                Using future citations as a quality proxy, humans clearly
+                beat AI at flagging both exceptional papers and clear
+                weak papers. AI's predictive advantage is concentrated in
+                the middle of the distribution, where human reviewers
+                tend to give middling scores. But the calls that
+                determine the conference program are at the top
+                &mdash; which papers to accept &mdash; and at the bottom
+                &mdash; which to clearly reject. Humans flag those
+                papers correctly; AI does not.
               </li>
               <li>
                 <strong>The gap is closing fast.</strong>
