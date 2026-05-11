@@ -212,15 +212,30 @@ const X_AXIS_TIME = {
   border: { color: "#bbb" },
 };
 
-// Y-axis with semantic top / bottom poles. The pole labels are drawn
-// INSIDE the chart area as corner annotations (see cornerLabelsPlugin
-// below) rather than as tick labels, so they don't eat horizontal margin
-// on the left side. The axis itself is minimal: no tick labels, no grid.
-function makeYAxisConfig({ min, max, topLabel, bottomLabel }) {
+// Y-axis with two numeric ticks (at min and max) AND semantic-pole
+// annotations inside the chart corners. The numeric ticks keep the
+// scale legible; the corner annotations explain what the poles mean.
+// The corner labels are drawn INSIDE the chart by cornerLabelsPlugin
+// (defined below) so they don't eat horizontal margin on the left.
+function makeYAxisConfig({ min, max, topLabel, bottomLabel, tickDecimals = 0 }) {
   return {
     axis: {
       min, max,
-      ticks: { display: false, padding: 0 },
+      afterBuildTicks: function (scale) {
+        scale.ticks = [{ value: min }, { value: max }];
+      },
+      ticks: {
+        autoSkip: false,
+        padding: 6,
+        color: "#666",
+        font: { size: 10 },
+        maxRotation: 0,
+        callback: (v) => {
+          if (Math.abs(v - max) < 1e-6) return max.toFixed(tickDecimals);
+          if (Math.abs(v - min) < 1e-6) return min.toFixed(0);
+          return "";
+        },
+      },
       grid: { display: false },
       border: { color: "#bbb" },
     },
@@ -230,16 +245,18 @@ function makeYAxisConfig({ min, max, topLabel, bottomLabel }) {
 
 const Y_CFG_L1 = makeYAxisConfig({
   min: 0,
-  max: 2,
-  topLabel: "completely different",
+  max: 1,
+  topLabel: "very different from humans",
   bottomLabel: "identical to humans",
+  tickDecimals: 0,
 });
 
 const Y_CFG_CORR = makeYAxisConfig({
   min: 0,
   max: R_THEORETICAL_MAX,
-  topLabel: "theoretical maximum",
+  topLabel: "theoretical maximum (see paper)",
   bottomLabel: "no agreement",
+  tickDecimals: 3,
 });
 
 // Plugin: draws the top and bottom semantic-pole labels in the corners
@@ -271,6 +288,73 @@ const cornerLabelsPlugin = {
 };
 Chart.register(cornerLabelsPlugin);
 
+// Plugin: draws per-marker error bars (whiskers) instead of a continuous
+// band. A band misleadingly implies the CI is a continuous function of
+// time, but we only have CIs at discrete release points. Whiskers at each
+// marker spanning [lo, hi] are the honest representation.
+//
+// The plugin reads dataset visibility (via mainDatasetIndex) so toggling
+// the main line in the legend also toggles its whiskers automatically,
+// keeping them visually synced.
+const errorBarsPlugin = {
+  id: "errorBars",
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins.errorBars;
+    if (!cfg || !cfg.series) return;
+    const xScale = chart.scales.x;
+    const yScale = chart.scales.y;
+    const ctx = chart.ctx;
+    cfg.series.forEach(({ points, color, mainDatasetIndex }) => {
+      if (mainDatasetIndex !== undefined && !chart.isDatasetVisible(mainDatasetIndex)) {
+        return;
+      }
+      ctx.save();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 1.4;
+      ctx.lineCap = "round";
+      const cap = 4;
+      points.forEach((p) => {
+        const x = xScale.getPixelForValue(new Date(p.x).getTime());
+        const yLo = yScale.getPixelForValue(p.lo);
+        const yHi = yScale.getPixelForValue(p.hi);
+        // vertical stem
+        ctx.beginPath();
+        ctx.moveTo(x, yLo);
+        ctx.lineTo(x, yHi);
+        ctx.stroke();
+        // top cap
+        ctx.beginPath();
+        ctx.moveTo(x - cap, yHi);
+        ctx.lineTo(x + cap, yHi);
+        ctx.stroke();
+        // bottom cap
+        ctx.beginPath();
+        ctx.moveTo(x - cap, yLo);
+        ctx.lineTo(x + cap, yLo);
+        ctx.stroke();
+      });
+      ctx.restore();
+    });
+  },
+};
+Chart.register(errorBarsPlugin);
+
+// Helper: dense points along a horizontal flat line at y=value across
+// the chart's full x-range. Used to give the reference line enough
+// hit-points that hovering anywhere along it fires a tooltip — even
+// though the line is drawn pointless.
+function flatLinePoints(y, n, extras = {}) {
+  const startTime = new Date(X_MIN).getTime();
+  const endTime = new Date(X_MAX).getTime();
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const t = startTime + (endTime - startTime) * (i / n);
+    const dateStr = new Date(t).toISOString().slice(0, 10);
+    out.push({ x: dateStr, y, ...extras });
+  }
+  return out;
+}
+
 // ============================================================
 // Helpers
 // ============================================================
@@ -288,9 +372,17 @@ function pointsFor(vendor, metric) {
 
 function tooltipCallbacks(metricLabel) {
   return {
-    title: (items) => items.length ? items[0].raw.name : "",
+    title: (items) => {
+      if (!items.length) return "";
+      const r = items[0].raw;
+      if (r && r.isRef) return "Human-to-human correlation";
+      return r && r.name ? r.name : "";
+    },
     label: (item) => {
       const r = item.raw;
+      if (r.isRef) {
+        return `${metricLabel} = ${r.y.toFixed(3)}  (95% CI [${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}])`;
+      }
       return `${metricLabel} = ${r.y.toFixed(3)}  (released ${fmtDate(r.x)})`;
     },
   };
@@ -332,25 +424,18 @@ function vendorOfKey(key) {
 // Custom legend onClick. Two responsibilities:
 //   (1) Vendor lock: block hiding Opus or GPT if the dropdown highlights
 //       a model from that vendor.
-//   (2) Band pairing: when a main legend item is toggled, also toggle
-//       its associated CI-band datasets so the shaded area follows the
-//       line. Bands are matched by label-prefix convention (see
-//       BAND_PREFIX_BY_MAIN below).
+//   (2) H2H pairing: when the human-to-human main line is toggled, also
+//       toggle its CI-band datasets so the shaded band follows the line.
+//       (Per-vendor whiskers don't need pairing — they're drawn by the
+//       errorBarsPlugin which reads dataset visibility on every frame.)
 //
-// Uses chart.hide() / chart.show() (not setDatasetVisibility + update),
-// because those Chart.js helpers animate the transition instead of just
-// popping the series off.
-const BAND_PREFIX_BY_MAIN = {
-  "Anthropic Opus": "_opus_band",
-  "OpenAI GPT":     "_gpt_band",
-  // Human-to-human label includes the r value; match by `.startsWith`
-  // in the function below.
-};
-
+// All visibility changes for a single click are applied atomically, then
+// committed with one chart.update() call. The 'show' / 'hide' update
+// modes drive a single synchronized fade across all affected datasets,
+// so the line and its band animate together.
 function lockedLegendOnClick(e, legendItem, legend) {
   const idx = legendItem.datasetIndex;
   const chart = legend.chart;
-  // Vendor lock applies only to the Opus and GPT main datasets (indices 0/1).
   if (idx < 2) {
     const vendor = idx === 0 ? "opus" : "gpt";
     if (vendorOfKey(currentSelection) === vendor) {
@@ -358,27 +443,16 @@ function lockedLegendOnClick(e, legendItem, legend) {
     }
   }
   const willBeVisible = !chart.isDatasetVisible(idx);
-  if (willBeVisible) {
-    chart.show(idx);
-    legendItem.hidden = false;
-  } else {
-    chart.hide(idx);
-    legendItem.hidden = true;
-  }
-  // Toggle paired CI band datasets.
-  const mainLabel = chart.data.datasets[idx].label;
-  let bandPrefix = BAND_PREFIX_BY_MAIN[mainLabel];
-  if (!bandPrefix && mainLabel.startsWith("Human-to-human")) {
-    bandPrefix = "_h2h_band";
-  }
-  if (bandPrefix) {
+  const toToggle = [idx];
+  const mainLabel = chart.data.datasets[idx].label || "";
+  if (mainLabel.startsWith("Human-to-human")) {
     chart.data.datasets.forEach((ds, i) => {
-      if (ds.label && ds.label.startsWith(bandPrefix)) {
-        if (willBeVisible) chart.show(i);
-        else chart.hide(i);
-      }
+      if (ds.label && ds.label.startsWith("_h2h_band")) toToggle.push(i);
     });
   }
+  toToggle.forEach((i) => chart.setDatasetVisibility(i, willBeVisible));
+  legendItem.hidden = !willBeVisible;
+  chart.update(willBeVisible ? "show" : "hide");
 }
 
 // ============================================================
@@ -451,61 +525,33 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
 const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", Y_CFG_L1);
 const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
 
-// Append confidence bands and the human-to-human reference to chart-corr.
-//
-// Drawing order is controlled by `order`: lower = drawn first (background).
-// Bands get order=0 so they sit behind the main lines (order=2 set in
-// buildLineChart) and the reference line (order=1).
-//
-// Each band is a pair of datasets: an "upper" line that fills DOWN to a
-// "lower" line via `fill: '+1'`. The line strokes themselves are
-// transparent so only the filled area is visible.
-function bandPoints(metricKey, vendor) {
-  return TREND_DATA[vendor].map((m) => ({ x: m.date, y: m[metricKey] }));
-}
-
-const VENDOR_BAND_ALPHA = "26"; // ~15% alpha as hex (38/255)
+// Post-build setup for chart-corr:
+//   (i) per-vendor CI as whiskers (custom plugin reads visibility flags
+//       on the main vendor datasets, so toggling auto-syncs)
+//   (ii) human-to-human CI as a shaded band (a constant, so a continuous
+//       band IS the right representation here)
+//   (iii) human-to-human reference line, densified with hit-points so
+//        hovering anywhere along it fires a tooltip
 const H2H_BAND_FILL = "rgba(120, 120, 120, 0.14)";
 
+// Whiskers plugin config (dataset indices 0/1 = opus/gpt main lines).
+chartCorr.options.plugins.errorBars = {
+  series: [
+    {
+      points: TREND_DATA.opus.map((m) => ({ x: m.date, lo: m.corr_lo, hi: m.corr_hi })),
+      color: COLORS.opus,
+      mainDatasetIndex: 0,
+    },
+    {
+      points: TREND_DATA.gpt.map((m) => ({ x: m.date, lo: m.corr_lo, hi: m.corr_hi })),
+      color: COLORS.gpt,
+      mainDatasetIndex: 1,
+    },
+  ],
+};
+
 chartCorr.data.datasets.push(
-  // ----- Per-vendor CI bands -----
-  {
-    label: "_opus_band_upper",
-    data: bandPoints("corr_hi", "opus"),
-    borderColor: "transparent",
-    backgroundColor: COLORS.opus + VENDOR_BAND_ALPHA,
-    fill: "+1",
-    pointRadius: 0,
-    pointHoverRadius: 0,
-    order: 0,
-  },
-  {
-    label: "_opus_band_lower",
-    data: bandPoints("corr_lo", "opus"),
-    borderColor: "transparent",
-    pointRadius: 0,
-    pointHoverRadius: 0,
-    order: 0,
-  },
-  {
-    label: "_gpt_band_upper",
-    data: bandPoints("corr_hi", "gpt"),
-    borderColor: "transparent",
-    backgroundColor: COLORS.gpt + VENDOR_BAND_ALPHA,
-    fill: "+1",
-    pointRadius: 0,
-    pointHoverRadius: 0,
-    order: 0,
-  },
-  {
-    label: "_gpt_band_lower",
-    data: bandPoints("corr_lo", "gpt"),
-    borderColor: "transparent",
-    pointRadius: 0,
-    pointHoverRadius: 0,
-    order: 0,
-  },
-  // ----- Human-to-human reference band (95% CI) -----
+  // ----- Human-to-human reference band (95% CI). Order 0 = background. -----
   {
     label: "_h2h_band_upper",
     data: [{ x: X_MIN, y: H2H_R_HI }, { x: X_MAX, y: H2H_R_HI }],
@@ -524,15 +570,21 @@ chartCorr.data.datasets.push(
     pointHoverRadius: 0,
     order: 0,
   },
-  // ----- Human-to-human reference line (visible, dashed) -----
+  // ----- Human-to-human reference line (visible, dashed). Order 1. -----
+  // Dense data points along the line give Chart.js something to detect
+  // hover against, so the tooltip fires when the user mouses near the
+  // line — the points themselves render at radius 0.
   {
     label: `Human-to-human correlation (${H2H_R.toFixed(3)})`,
-    data: [{ x: X_MIN, y: H2H_R }, { x: X_MAX, y: H2H_R }],
+    data: flatLinePoints(H2H_R, 40, {
+      isRef: true, ciLo: H2H_R_LO, ciHi: H2H_R_HI,
+    }),
     borderColor: "#666",
     borderDash: [5, 4],
     borderWidth: 1.4,
     pointRadius: 0,
     pointHoverRadius: 0,
+    pointHitRadius: 12,
     pointStyle: "line",
     fill: false,
     spanGaps: true,
