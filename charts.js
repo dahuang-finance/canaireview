@@ -1036,10 +1036,14 @@ function jitteredFor(key) {
   if (!SCATTER_DATA || !SCATTER_DATA[key]) return [];
   const pts = SCATTER_DATA[key].points;
   const rand = seededRandom(key.charCodeAt(0) * 9973 + (key.length * 17));
-  // Specific models: integer AI, half-integer mean human → larger jitter
-  // "all": already continuous → smaller jitter
-  const xJ = key === "all" ? 0.04 : 0.12;
-  const yJ = key === "all" ? 0.04 : 0.12;
+  // Individual-h on x-axis: integer human scores (1,2,3,4,5) with rare
+  // half-integer 4.5 -> need wider horizontal jitter to spread the
+  // ~3,890 points across each score bin. AI on y-axis is also integer
+  // (or half-integer at the boundary), wider jitter helps there too.
+  // "all" uses the model-averaged AI score which is more continuous, so
+  // jitter can be a touch smaller.
+  const xJ = key === "all" ? 0.18 : 0.22;
+  const yJ = key === "all" ? 0.10 : 0.22;
   const out = pts.map(p => ({
     x: p.h + rand() * 2 * xJ,
     y: p.a + rand() * 2 * yJ,
@@ -1093,17 +1097,23 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         showLine: true,
         fill: false,
       },
-      // 2: binned conditional mean of AI given human
+      // 2: binned conditional mean of AI given human. Drawn on top of
+      // the dot cloud with white-filled / dark-bordered markers so the
+      // points read clearly against the dense scatter; the large
+      // pointHitRadius makes the tooltip activate without requiring
+      // the cursor to land on the exact 2 px center.
       {
         label: "AI mean per human-score bin",
         type: "line",
         data: [],
         borderColor: "#1f1f1f",
-        borderWidth: 2,
-        pointRadius: 4,
-        pointBackgroundColor: "#1f1f1f",
-        pointBorderColor: "#fff",
-        pointBorderWidth: 1.5,
+        borderWidth: 2.5,
+        pointRadius: 7,
+        pointHoverRadius: 9,
+        pointHitRadius: 20,
+        pointBackgroundColor: "#ffffff",
+        pointBorderColor: "#1f1f1f",
+        pointBorderWidth: 2.2,
         showLine: true,
         fill: false,
         tension: 0.05,
@@ -1114,7 +1124,10 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
     responsive: true,
     maintainAspectRatio: false,
     animation: { duration: 600, easing: "easeOutCubic" },
-    interaction: { mode: "nearest", intersect: true },
+    // intersect:false + the binned-mean dataset's large pointHitRadius
+    // (20) means hovering near a binned-mean point activates its
+    // tooltip, even when dense scatter dots are sitting on top.
+    interaction: { mode: "nearest", intersect: false },
     layout: { padding: { top: 8, right: 14, bottom: 4, left: 4 } },
     plugins: {
       legend: {
@@ -1194,7 +1207,7 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         border: { color: "#bbb" },
         title: {
           display: true,
-          text: "Mean human score (each paper has 2 human reviewers)",
+          text: "Human reviewer score (each paper contributes both reviewers' scores)",
           padding: 6,
           color: "#666",
           font: { size: 11 },
@@ -1241,6 +1254,11 @@ fetch("scatter_data.json")
 // ============================================================
 
 let PREDICTIVE_DATA = null;
+// Side store of the current model's bin metadata, indexed by bin
+// position. Kept alongside the chart so the tooltip callback can read
+// signed beta + SE without putting non-numeric values into Chart.js's
+// data array (which would interfere with bar rendering).
+let PREDICTIVE_CURRENT_BINS = null;
 
 const PRED_HUMAN_COLOR = "#333333";
 function predAiColorFor(modelKey) {
@@ -1252,9 +1270,9 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
   type: "bar",
   data: {
     labels: [
-      "Top tail\n(mean ≤ 1.5)",
-      "Middle\n(1.5 < mean < 4.0)",
-      "Bottom tail\n(mean ≥ 4.0)",
+      ["Top tail", "(mean ≤ 1.5)"],
+      ["Middle",   "(1.5 < mean < 4.0)"],
+      ["Bottom tail", "(mean ≥ 4.0)"],
     ],
     datasets: [
       {
@@ -1264,8 +1282,8 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         borderColor: PRED_HUMAN_COLOR,
         borderWidth: 0,
         borderRadius: 2,
-        barPercentage: 0.85,
         categoryPercentage: 0.72,
+        barPercentage: 0.85,
       },
       {
         label: "AI",
@@ -1274,8 +1292,8 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         borderColor: "#9a9a9a",
         borderWidth: 0,
         borderRadius: 2,
-        barPercentage: 0.85,
         categoryPercentage: 0.72,
+        barPercentage: 0.85,
       },
     ],
   },
@@ -1297,17 +1315,35 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         backgroundColor: "rgba(20,20,20,0.92)",
         padding: 10,
         callbacks: {
-          title: (items) => items.length ? items[0].label.replace("\n", " ") : "",
+          title: (items) => {
+            if (!items.length) return "";
+            const lbl = items[0].label;
+            return Array.isArray(lbl) ? lbl.join(" ") : String(lbl);
+          },
           label: (item) => {
             const ds = item.dataset;
-            const rec = item.raw;
-            if (rec && typeof rec === "object" && "beta" in rec) {
-              const sign = rec.beta >= 0 ? "+" : "−";
-              const m = Math.abs(rec.beta).toFixed(3);
-              const se = rec.se !== undefined ? `  (SE ${rec.se.toFixed(3)})` : "";
-              return `${ds.label}: β = ${sign}${m}${se}`;
+            const i  = item.dataIndex;
+            const bin = PREDICTIVE_CURRENT_BINS && PREDICTIVE_CURRENT_BINS[i];
+            if (!bin) {
+              return `${ds.label}: |β| = ${Number(item.parsed.y).toFixed(3)}`;
             }
-            return `${ds.label}: |β| = ${Number(item.parsed.y).toFixed(3)}`;
+            const isHuman = ds.label === "Human reviewer";
+            const beta = isHuman ? bin.beta_h : bin.beta_ai;
+            const se   = isHuman ? bin.se_h   : bin.se_ai;
+            if (beta === null || beta === undefined) {
+              return `${ds.label}: not estimated`;
+            }
+            const sign = beta >= 0 ? "+" : "−";
+            const m = Math.abs(beta).toFixed(3);
+            const seStr = (se !== null && se !== undefined)
+              ? `  (SE ${se.toFixed(3)})` : "";
+            return `${ds.label}: β = ${sign}${m}${seStr}`;
+          },
+          afterBody: (items) => {
+            if (!items.length) return [];
+            const i = items[0].dataIndex;
+            const bin = PREDICTIVE_CURRENT_BINS && PREDICTIVE_CURRENT_BINS[i];
+            return bin ? [`n = ${bin.n_pap} papers`] : [];
           },
         },
       },
@@ -1321,10 +1357,6 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
           font: { size: 10.5 },
           autoSkip: false,
           maxRotation: 0,
-          callback: function (value) {
-            const label = this.getLabelForValue(value);
-            return label.split("\n");
-          },
         },
       },
       y: {
@@ -1334,7 +1366,7 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         ticks: { color: "#444", font: { size: 10 } },
         title: {
           display: true,
-          text: "|β|  (Poisson PML, log-citations per score unit)",
+          text: "|β|  (citation-prediction coefficient, larger = stronger)",
           padding: 8,
           color: "#666",
           font: { size: 10.5 },
@@ -1344,28 +1376,16 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
   },
 });
 
-// Stash beta sign + SE on each datapoint for the tooltip. Chart.js
-// bar y-values must be non-negative for the bar to render correctly
-// in our layout, but we still want to expose the signed beta and SE.
-function predDatasetForRow(bins, key) {
-  return bins.map((b) => {
-    const beta = b[key];
-    const se   = b[key === "beta_h" ? "se_h" : "se_ai"];
-    return {
-      y:    beta === null ? 0 : Math.abs(beta),
-      beta: beta,
-      se:   se,
-    };
-  });
-}
-
 function applyPredictiveSelection(modelKey) {
   if (!PREDICTIVE_DATA || !PREDICTIVE_DATA[modelKey]) return;
   const bins = PREDICTIVE_DATA[modelKey].bins;
+  PREDICTIVE_CURRENT_BINS = bins;
   const dsH = chartPredictive.data.datasets[0];
   const dsA = chartPredictive.data.datasets[1];
-  dsH.data = predDatasetForRow(bins, "beta_h");
-  dsA.data = predDatasetForRow(bins, "beta_ai");
+  dsH.data = bins.map((b) =>
+    b.beta_h === null || b.beta_h === undefined ? 0 : Math.abs(b.beta_h));
+  dsA.data = bins.map((b) =>
+    b.beta_ai === null || b.beta_ai === undefined ? 0 : Math.abs(b.beta_ai));
   const aiColor = predAiColorFor(modelKey);
   dsA.backgroundColor = aiColor;
   dsA.borderColor = aiColor;
