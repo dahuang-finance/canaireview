@@ -264,11 +264,48 @@
 
         <figure class="fig-chart">
           <h3 class="fig-title">
-            Per-paper Scores: AI vs Human
-            <span class="fig-subtitle" id="scatter-subtitle">Each dot is one paper</span>
+            AI Score vs Single Human Reviewer Score
+            <span class="fig-subtitle" id="scatter-subtitle">Each dot = one paper-reviewer pair</span>
           </h3>
           <div class="chart-container">
             <canvas id="chart-scatter"></canvas>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ======================================================== -->
+    <!-- PREDICTIVE EDGE: where in the score distribution does     -->
+    <!-- each rater's signal live? Tracks the same model picker.   -->
+    <!-- ======================================================== -->
+    <section class="figures-block predictive">
+      <header class="figures-block-head">
+        <p class="block-eyebrow">Predictive validity</p>
+        <h2 class="block-title" id="predictive-title">Where does the predictive signal live?</h2>
+      </header>
+      <div class="figures-row figures-row-single">
+        <figure class="fig-chart">
+          <h3 class="fig-title">
+            Citation Prediction Coefficients by Score Region<button
+              class="info-trigger" type="button" tabindex="0"
+              aria-label="What do these bars mean?"><span aria-hidden="true">?</span>
+              <span class="info-tooltip" role="tooltip">
+                Each pair of bars shows |&beta;| from a Poisson PML
+                regression of citations on the human score and the AI
+                score (with review-year and citation-year fixed effects,
+                paper-clustered standard errors). Larger |&beta;|
+                = stronger predictive relationship with citations.
+                Papers are partitioned into three regions by mean human
+                score: top tail (mean &le; 1.5), middle (1.5 to 4.0),
+                bottom tail (mean &ge; 4.0). UWFC scoring is 1 = best,
+                5 = worst, so &beta; &lt; 0 is the predictively-correct
+                sign; we plot magnitudes.
+              </span>
+            </button>
+            <span class="fig-subtitle" id="predictive-subtitle">All-model average</span>
+          </h3>
+          <div class="chart-container">
+            <canvas id="chart-predictive"></canvas>
           </div>
         </figure>
       </div>

@@ -294,6 +294,14 @@ h3 {
   gap: 2rem;
 }
 
+/* Single-figure rows render full-width with the chart taking the same
+   visual weight as a half-width pair from a two-figure row. Caps width
+   so the bars don't stretch unhelpfully on wide screens. */
+.figures-row-single {
+  grid-template-columns: minmax(0, 720px);
+  justify-content: center;
+}
+
 /* ---------- Model picker (dropdown) ---------- */
 .model-picker {
   display: flex;

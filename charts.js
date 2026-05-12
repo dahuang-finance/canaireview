@@ -1232,6 +1232,165 @@ fetch("scatter_data.json")
   });
 
 // ============================================================
+// Predictive-edge bar chart (paired bars by score region).
+// One bar pair per region: |beta_H| (human reviewer) and |beta_AI|
+// (AI score) from a Poisson PML regression of citations on both,
+// fit separately within each region. Source data is
+// predictive_edge_data.json. The chart reacts to the same model
+// picker as the histogram and scatter.
+// ============================================================
+
+let PREDICTIVE_DATA = null;
+
+const PRED_HUMAN_COLOR = "#333333";
+function predAiColorFor(modelKey) {
+  if (modelKey === "all") return "#9a9a9a";
+  return vendorOfKey(modelKey) === "opus" ? COLORS.opus : COLORS.gpt;
+}
+
+const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
+  type: "bar",
+  data: {
+    labels: [
+      "Top tail\n(mean ≤ 1.5)",
+      "Middle\n(1.5 < mean < 4.0)",
+      "Bottom tail\n(mean ≥ 4.0)",
+    ],
+    datasets: [
+      {
+        label: "Human reviewer",
+        data: [0, 0, 0],
+        backgroundColor: PRED_HUMAN_COLOR,
+        borderColor: PRED_HUMAN_COLOR,
+        borderWidth: 0,
+        borderRadius: 2,
+        barPercentage: 0.85,
+        categoryPercentage: 0.72,
+      },
+      {
+        label: "AI",
+        data: [0, 0, 0],
+        backgroundColor: "#9a9a9a",
+        borderColor: "#9a9a9a",
+        borderWidth: 0,
+        borderRadius: 2,
+        barPercentage: 0.85,
+        categoryPercentage: 0.72,
+      },
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: 600, easing: "easeOutCubic" },
+    layout: { padding: { top: 12, right: 14, bottom: 4, left: 4 } },
+    plugins: {
+      legend: {
+        position: "top", align: "end",
+        labels: {
+          usePointStyle: true,
+          boxWidth: 10, boxHeight: 10, padding: 14,
+          font: { size: 11 }, color: "#333",
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(20,20,20,0.92)",
+        padding: 10,
+        callbacks: {
+          title: (items) => items.length ? items[0].label.replace("\n", " ") : "",
+          label: (item) => {
+            const ds = item.dataset;
+            const rec = item.raw;
+            if (rec && typeof rec === "object" && "beta" in rec) {
+              const sign = rec.beta >= 0 ? "+" : "−";
+              const m = Math.abs(rec.beta).toFixed(3);
+              const se = rec.se !== undefined ? `  (SE ${rec.se.toFixed(3)})` : "";
+              return `${ds.label}: β = ${sign}${m}${se}`;
+            }
+            return `${ds.label}: |β| = ${Number(item.parsed.y).toFixed(3)}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        border: { color: "#bbb" },
+        ticks: {
+          color: "#333",
+          font: { size: 10.5 },
+          autoSkip: false,
+          maxRotation: 0,
+          callback: function (value) {
+            const label = this.getLabelForValue(value);
+            return label.split("\n");
+          },
+        },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "#eee", drawBorder: false },
+        border: { color: "#bbb" },
+        ticks: { color: "#444", font: { size: 10 } },
+        title: {
+          display: true,
+          text: "|β|  (Poisson PML, log-citations per score unit)",
+          padding: 8,
+          color: "#666",
+          font: { size: 10.5 },
+        },
+      },
+    },
+  },
+});
+
+// Stash beta sign + SE on each datapoint for the tooltip. Chart.js
+// bar y-values must be non-negative for the bar to render correctly
+// in our layout, but we still want to expose the signed beta and SE.
+function predDatasetForRow(bins, key) {
+  return bins.map((b) => {
+    const beta = b[key];
+    const se   = b[key === "beta_h" ? "se_h" : "se_ai"];
+    return {
+      y:    beta === null ? 0 : Math.abs(beta),
+      beta: beta,
+      se:   se,
+    };
+  });
+}
+
+function applyPredictiveSelection(modelKey) {
+  if (!PREDICTIVE_DATA || !PREDICTIVE_DATA[modelKey]) return;
+  const bins = PREDICTIVE_DATA[modelKey].bins;
+  const dsH = chartPredictive.data.datasets[0];
+  const dsA = chartPredictive.data.datasets[1];
+  dsH.data = predDatasetForRow(bins, "beta_h");
+  dsA.data = predDatasetForRow(bins, "beta_ai");
+  const aiColor = predAiColorFor(modelKey);
+  dsA.backgroundColor = aiColor;
+  dsA.borderColor = aiColor;
+  chartPredictive.update();
+
+  const sub = document.getElementById("predictive-subtitle");
+  if (sub) {
+    const label = MODEL_LABELS[modelKey];
+    sub.textContent = (modelKey === "all")
+      ? "All-model average"
+      : label;
+  }
+}
+
+fetch("predictive_edge_data.json")
+  .then(r => r.json())
+  .then(data => {
+    PREDICTIVE_DATA = data;
+    applyPredictiveSelection(currentSelection);
+  })
+  .catch(err => {
+    console.error("Failed to load predictive_edge_data.json:", err);
+  });
+
+// ============================================================
 // Belt-and-suspenders: re-size every chart on window resize.
 // Chart.js v4 already uses ResizeObserver, but breakpoint changes that
 // move figures between 1- and 2-column layouts can leave a chart at the
@@ -1242,7 +1401,7 @@ let _resizeDebounce;
 window.addEventListener("resize", () => {
   clearTimeout(_resizeDebounce);
   _resizeDebounce = setTimeout(() => {
-    const charts = [chartL1, chartCorr, chartHist, chartScatter];
+    const charts = [chartL1, chartCorr, chartHist, chartScatter, chartPredictive];
     for (const c of charts) {
       if (c && typeof c.resize === "function") {
         try { c.resize(); } catch (_) { /* noop */ }
@@ -1307,6 +1466,9 @@ function applyModelSelection(modelKey) {
     chartScatter.update();
   }
 
+  // Predictive-edge chart: paired bars by score region
+  applyPredictiveSelection(modelKey);
+
   // Section title updates dynamically based on selection
   const blockTitle = document.getElementById("drilldown-title");
   if (blockTitle) {
@@ -1322,8 +1484,8 @@ function applyModelSelection(modelKey) {
     ? "All-model average vs human reference"
     : `${label} vs human reference`;
   if (scatterSub) scatterSub.textContent = (modelKey === "all")
-    ? "Each dot = one paper (AI score averaged across all six models)"
-    : `Each dot = one paper, scored by ${label}`;
+    ? "Each dot = one paper-reviewer pair (AI score averaged across the six models)"
+    : `Each dot = one paper-reviewer pair, scored by ${label}`;
 }
 
 document.getElementById("model-select").addEventListener("change", (e) => {
