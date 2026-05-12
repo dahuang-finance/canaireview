@@ -1097,26 +1097,29 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         showLine: true,
         fill: false,
       },
-      // 2: binned conditional mean of AI given human. Drawn on top of
-      // the dot cloud with white-filled / dark-bordered markers so the
-      // points read clearly against the dense scatter; the large
-      // pointHitRadius makes the tooltip activate without requiring
-      // the cursor to land on the exact 2 px center.
+      // 2: binned conditional mean of AI given human. Filled with the
+      // vendor color (set per-model in applyModelSelection) and ringed
+      // with a white border so the dot reads cleanly against the dense
+      // dot cloud underneath. The `order` value puts this dataset on
+      // top of the scatter dots (lower `order` draws first, higher
+      // draws last); a large pointHitRadius makes the tooltip activate
+      // without requiring the cursor to land on the 4 px center.
       {
         label: "AI mean per human-score bin",
         type: "line",
         data: [],
         borderColor: "#1f1f1f",
-        borderWidth: 2.5,
-        pointRadius: 7,
-        pointHoverRadius: 9,
-        pointHitRadius: 20,
-        pointBackgroundColor: "#ffffff",
-        pointBorderColor: "#1f1f1f",
-        pointBorderWidth: 2.2,
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        pointHitRadius: 18,
+        pointBackgroundColor: "#1f1f1f",
+        pointBorderColor: "#ffffff",
+        pointBorderWidth: 1.5,
         showLine: true,
         fill: false,
         tension: 0.05,
+        order: 10,
       },
     ],
   },
