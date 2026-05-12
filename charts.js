@@ -1044,10 +1044,21 @@ function jitteredFor(key) {
   // jitter can be a touch smaller.
   const xJ = key === "all" ? 0.18 : 0.22;
   const yJ = key === "all" ? 0.10 : 0.22;
-  const out = pts.map(p => ({
-    x: p.h + rand() * 2 * xJ,
-    y: p.a + rand() * 2 * yJ,
-  }));
+  // Random subsample of the dot cloud for visual clarity. With ~3,890
+  // points stacked at five integer x-values, the cloud is far denser
+  // than the eye can read. Thinning to ~75% reduces saturation and
+  // lets the binned-mean markers show through without distorting the
+  // visible distribution.
+  const KEEP_FRACTION = 0.75;
+  const out = [];
+  for (const p of pts) {
+    const u = rand() + 0.5;            // 0..1 from seededRandom's -0.5..0.5
+    if (u > KEEP_FRACTION) continue;   // skip ~25% of points
+    out.push({
+      x: p.h + rand() * 2 * xJ,
+      y: p.a + rand() * 2 * yJ,
+    });
+  }
   SCATTER_JITTERED[key] = out;
   return out;
 }
