@@ -308,6 +308,41 @@ const cornerLabelsPlugin = {
 };
 Chart.register(cornerLabelsPlugin);
 
+// Plugin: draws multi-line italic annotation blocks in the upper
+// corners of the plot area. Used by the scatter chart for an inside-
+// the-chart "legend" — actual model's OLS on the left (tinted in the
+// line color) and the theoretical ceiling on the right (in gray to
+// match the dashed reference line). Each block: { align, color,
+// lines: [...] }.
+const olsAnnotationPlugin = {
+  id: "olsAnnotation",
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins.olsAnnotation;
+    if (!cfg || !cfg.blocks || !cfg.blocks.length) return;
+    const yScale = chart.scales.y;
+    const xScale = chart.scales.x;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = "italic 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
+    ctx.textBaseline = "top";
+    for (const block of cfg.blocks) {
+      const lines = block.lines || [];
+      if (!lines.length) continue;
+      const align = block.align === "right" ? "right" : "left";
+      ctx.textAlign = align;
+      ctx.fillStyle = block.color || "#777";
+      const x = align === "right" ? xScale.right - 8 : xScale.left + 8;
+      let y = yScale.top + 4;
+      for (const line of lines) {
+        ctx.fillText(line, x, y);
+        y += 14;
+      }
+    }
+    ctx.restore();
+  },
+};
+Chart.register(olsAnnotationPlugin);
+
 // Per-chart, per-vendor whisker opacity. Lives outside Chart.js so the
 // errorBarsPlugin can multiply it into the stroke alpha each frame; the
 // fadeWhiskers helper interpolates it on legend toggles.
@@ -918,6 +953,38 @@ const humanRefPlugin = {
 };
 Chart.register(humanRefPlugin);
 
+// Custom interaction mode for the histogram: hover only when the
+// cursor is over the bar itself, with one exception — bars shorter
+// than MIN_HIT_HEIGHT (~24 px, roughly <6% of the chart) get their
+// hit rect extended upward to that minimum so the near-zero bars
+// remain reachable. Tall bars use their drawn rect, no expansion.
+Chart.Interaction.modes.barWithMinHit = function (chart, event, options, useFinalPosition) {
+  const position = Chart.helpers.getRelativePosition(event, chart);
+  const items = [];
+  const MIN_HIT_HEIGHT = 24;
+  chart.data.datasets.forEach((_, datasetIndex) => {
+    const meta = chart.getDatasetMeta(datasetIndex);
+    if (!meta || meta.hidden) return;
+    meta.data.forEach((element, index) => {
+      if (!element || element.skip) return;
+      const { x, y, base, width } = element.getProps(
+        ["x", "y", "base", "width"], useFinalPosition
+      );
+      const half = width / 2;
+      const top = Math.min(y, base);
+      const bottom = Math.max(y, base);
+      const hitTop = Math.min(top, bottom - MIN_HIT_HEIGHT);
+      if (
+        position.x >= x - half && position.x <= x + half &&
+        position.y >= hitTop && position.y <= bottom
+      ) {
+        items.push({ datasetIndex, index, element });
+      }
+    });
+  });
+  return items;
+};
+
 const chartHist = new Chart(document.getElementById("chart-hist"), {
   type: "bar",
   data: {
@@ -940,6 +1007,10 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
     maintainAspectRatio: false,
     layout: { padding: { top: 14, right: 12, bottom: 4, left: 4 } },
     animation: { duration: 600, easing: "easeOutCubic" },
+    // Custom mode: hover the bar itself, but bars shorter than
+    // ~24 px (≈6% of chart) get their hit rect extended up from the
+    // baseline so the near-zero bars stay reachable.
+    interaction: { mode: "barWithMinHit", intersect: true },
     plugins: {
       // Per-chart options for the custom human-reference plugin
       humanRef: { data: HUMAN_HIST },
@@ -1040,18 +1111,42 @@ function jitteredFor(key) {
   // bleed into the half-score region (e.g., a dot at h=2 should not
   // smear close to h=2.5). The "all" view uses the model-averaged AI
   // score which is naturally continuous, so it needs even less jitter.
+  // Vertical jitter is wider than horizontal because the y-axis (AI
+  // score) has more room with the taller chart aspect ratio.
   const xJ = key === "all" ? 0.04 : 0.12;
-  const yJ = key === "all" ? 0.04 : 0.12;
-  // Random subsample of the dot cloud for visual clarity. With ~3,890
-  // points stacked at five integer x-values the cloud is far denser
-  // than the eye can read; thinning to ~40% reduces saturation and
-  // lets the binned-mean markers show through without distorting the
-  // visible distribution.
-  const KEEP_FRACTION = 0.40;
+  const yJ = key === "all" ? 0.06 : 0.20;
+
+  // Density-adaptive thinning. Bin points into 0.5x0.5 (h,a) cells,
+  // then keep a larger fraction of sparse cells and a smaller fraction
+  // of saturated ones. Off-diagonal disagreement dots (rare) survive
+  // fully; the dense diagonal mass is thinned aggressively so the
+  // binned-mean markers and trend remain readable without destroying
+  // the underlying density signal entirely.
+  const CELL = 0.5;
+  const cellKey = (h, a) => `${Math.round(h / CELL)}_${Math.round(a / CELL)}`;
+  const counts = new Map();
+  for (const p of pts) {
+    const k = cellKey(p.h, p.a);
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  // Tiered ladder: less aggressive than a uniform thin, but still
+  // monotone in density. Tuned by eye against the ~3,890-point
+  // per-model cloud — the densest cells (>250) keep ~12% so the
+  // dominant diagonal mass still reads as dense, just no longer flat.
+  const keepFrac = (n) => {
+    if (n <= 5)   return 1.00;   // preserve every dot in rare cells
+    if (n <= 15)  return 0.80;
+    if (n <= 40)  return 0.50;
+    if (n <= 100) return 0.30;
+    if (n <= 250) return 0.18;
+    return 0.12;                 // most-saturated cells
+  };
+
   const out = [];
   for (const p of pts) {
+    const keep = keepFrac(counts.get(cellKey(p.h, p.a)));
     const u = rand() + 0.5;            // 0..1 from seededRandom's -0.5..0.5
-    if (u > KEEP_FRACTION) continue;   // skip ~25% of points
+    if (u > keep) continue;
     out.push({
       x: p.h + rand() * 2 * xJ,
       y: p.a + rand() * 2 * yJ,
@@ -1080,6 +1175,66 @@ function scatterLineColor(modelKey) {
   return v === "opus" ? COLORS.opus : COLORS.gpt;
 }
 
+// Marker fill for the binned-mean dots is a darker variant of the
+// trend-line color so the dot reads as a distinct point against the
+// line and the dense cloud beneath it.
+function scatterMarkerFillColor(modelKey) {
+  if (modelKey === "all") return "#000000";
+  const v = vendorOfKey(modelKey);
+  return v === "opus" ? "#7a3525" : "#1f3a55";
+}
+
+// OLS regression of AI score on human score across all per-review
+// scatter points. Returns {b, a, r}: slope, intercept, Pearson r.
+// Slope b < 1 means AI compresses (less response per unit of human);
+// intercept a > 0 means AI is on average more lenient than humans.
+function computeScatterOLS(points) {
+  const n = points.length;
+  if (n < 2) return { b: NaN, a: NaN, r: NaN };
+  let sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0;
+  for (const p of points) {
+    sx += p.h;  sy += p.a;
+    sxx += p.h * p.h;  syy += p.a * p.a;  sxy += p.h * p.a;
+  }
+  const mx = sx / n, my = sy / n;
+  const varX = sxx / n - mx * mx;
+  const varY = syy / n - my * my;
+  const cov  = sxy / n - mx * my;
+  const b = cov / varX;
+  const a = my - b * mx;
+  const r = cov / Math.sqrt(varX * varY);
+  return { b, a, r };
+}
+
+// Custom interaction mode for the scatter chart: only the binned-mean
+// dataset (index 2) participates in hit-testing. Without this, the
+// default "nearest" mode picks a cloud dot first and the tooltip
+// filter silently drops it — so hovering near the marker shows
+// nothing. Hit threshold is the element's own radius + hitRadius
+// (same convention as Chart.js's built-in nearest mode).
+Chart.Interaction.modes.binMeanOnly = function (chart, event, options, useFinalPosition) {
+  const position = Chart.helpers.getRelativePosition(event, chart);
+  const meta = chart.getDatasetMeta(2);
+  if (!meta || meta.hidden) return [];
+  let nearest = null;
+  let minDist = Infinity;
+  for (let i = 0; i < meta.data.length; i++) {
+    const element = meta.data[i];
+    if (!element || element.skip) continue;
+    const center = element.getCenterPoint(useFinalPosition);
+    const dx = center.x - position.x;
+    const dy = center.y - position.y;
+    const dist = Math.hypot(dx, dy);
+    const opts = element.options || {};
+    const hitR = (opts.radius || 0) + (opts.hitRadius || 0);
+    if (dist <= hitR && dist < minDist) {
+      minDist = dist;
+      nearest = { datasetIndex: 2, index: i, element };
+    }
+  }
+  return nearest ? [nearest] : [];
+};
+
 const chartScatter = new Chart(document.getElementById("chart-scatter"), {
   type: "scatter",
   data: {
@@ -1094,14 +1249,22 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         pointRadius: 2.6,
         pointHoverRadius: 5,
       },
-      // 1: 45° reference line (perfect agreement)
+      // 1: theoretical best-fit line. Represents the "variance-matched
+      // oracle" — an AI that (a) achieves the maximum-possible
+      // correlation with a single human (= sqrt(r_HH), since human
+      // scores carry only r_HH worth of latent-quality signal) AND
+      // (b) spreads its scores across the full 1-5 range the way
+      // humans do (sd(AI) = sd(h)). Under both conditions, the
+      // regression slope equals sqrt(r_HH); the intercept is set so
+      // the line passes through (mean_h, mean_h) — i.e., a perfectly
+      // calibrated oracle. Endpoints populated per-render.
       {
-        label: "Perfect agreement",
+        label: "Theoretical best AI",
         type: "line",
-        data: [{ x: 1, y: 1 }, { x: 5, y: 5 }],
-        borderColor: "#aaa",
+        data: [],
+        borderColor: "#888",
         borderDash: [4, 4],
-        borderWidth: 1,
+        borderWidth: 1.5,
         pointRadius: 0,
         showLine: true,
         fill: false,
@@ -1119,16 +1282,19 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         data: [],
         borderColor: "#1f1f1f",
         borderWidth: 2,
-        pointRadius: 4,
+        pointRadius: 4.5,
         pointHoverRadius: 7,
         pointHitRadius: 18,
-        pointBackgroundColor: "#1f1f1f",
+        pointBackgroundColor: "#000000",
         pointBorderColor: "#ffffff",
-        pointBorderWidth: 1.5,
+        pointBorderWidth: 2,
         showLine: true,
         fill: false,
         tension: 0.05,
-        order: 10,
+        // Force this dataset to draw last (foreground). In Chart.js v4,
+        // higher `order` draws later, so this sits on top of the dot
+        // cloud (order 0).
+        order: 100,
       },
     ],
   },
@@ -1136,26 +1302,31 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
     responsive: true,
     maintainAspectRatio: false,
     animation: { duration: 600, easing: "easeOutCubic" },
-    // intersect:false + the binned-mean dataset's large pointHitRadius
-    // (20) means hovering near a binned-mean point activates its
-    // tooltip, even when dense scatter dots are sitting on top.
-    interaction: { mode: "nearest", intersect: false },
+    // Custom mode restricts hit-testing to the binned-mean dataset, so
+    // hovering anywhere in a ~40 px area around a marker activates its
+    // tooltip — cloud dots no longer compete for "nearest" and then
+    // get filtered out.
+    interaction: { mode: "binMeanOnly", intersect: false },
     layout: { padding: { top: 8, right: 14, bottom: 4, left: 4 } },
     plugins: {
+      olsAnnotation: { blocks: [] },
       legend: {
         position: "top", align: "end",
-        // Skip the synthetic "perfect agreement" entry; show only Papers
-        // and the binned mean for cleanliness.
         labels: {
           padding: 12,
           font: { size: 11 },
           usePointStyle: true,
+          // Small boxHeight shrinks the "Human reviews" circle swatch
+          // without truncating the line-style swatches (which use
+          // boxWidth for length).
+          boxWidth: 24,
+          boxHeight: 5,
           generateLabels: (chart) => {
             const dotDs = chart.data.datasets[0];
             const lineDs = chart.data.datasets[2];
             return [
               {
-                text: "Papers (one dot each)",
+                text: "Human reviews (one dot each)",
                 fillStyle: dotDs.backgroundColor,
                 strokeStyle: dotDs.backgroundColor,
                 lineWidth: 0,
@@ -1171,16 +1342,6 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
                 pointStyle: "line",
                 hidden: false,
                 datasetIndex: 2,
-              },
-              {
-                text: "Perfect agreement (y = x)",
-                fillStyle: "transparent",
-                strokeStyle: "#999",
-                lineWidth: 1,
-                pointStyle: "line",
-                lineDash: [4, 4],
-                hidden: false,
-                datasetIndex: 1,
               },
             ];
           },
@@ -1219,7 +1380,7 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         border: { color: "#bbb" },
         title: {
           display: true,
-          text: "Human reviewer score (each paper contributes both reviewers' scores)",
+          text: "Human reviewer score (reviewers occasionally give half-step scores)",
           padding: 6,
           color: "#666",
           font: { size: 11 },
@@ -1227,7 +1388,10 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
       },
       y: {
         type: "linear",
-        min: 0.6, max: 5.4,
+        // Extend the upper bound past the data so the OLS annotation
+        // in the top-left has clean white space and doesn't sit on
+        // top of dots. Ticks callback below still only labels 1-5.
+        min: 0.6, max: 6.0,
         ticks: {
           stepSize: 1,
           callback: (v) => (v === Math.floor(v) && v >= 1 && v <= 5) ? v : "",
@@ -1488,13 +1652,57 @@ function applyModelSelection(modelKey) {
 
   // Scatter: swap dot cloud + binned mean for the selected model
   if (SCATTER_DATA && SCATTER_DATA[modelKey]) {
-    const dotsDs = chartScatter.data.datasets[0];
-    const lineDs = chartScatter.data.datasets[2];
+    const dotsDs   = chartScatter.data.datasets[0];
+    const theoryDs = chartScatter.data.datasets[1];
+    const lineDs   = chartScatter.data.datasets[2];
+    const points = SCATTER_DATA[modelKey].points;
     dotsDs.data = jitteredFor(modelKey);
     dotsDs.backgroundColor = scatterDotColor(modelKey);
     lineDs.data = SCATTER_DATA[modelKey].binned.map(p => ({ x: p.h, y: p.a }));
     lineDs.borderColor = scatterLineColor(modelKey);
-    lineDs.pointBackgroundColor = scatterLineColor(modelKey);
+    lineDs.pointBackgroundColor = scatterMarkerFillColor(modelKey);
+
+    // Theoretical best-fit line for a variance-matched oracle AI —
+    // achieves max correlation sqrt(r_HH) AND spreads scores across
+    // the full 1-5 range (sd(AI) = sd(h)):
+    //   slope     = sqrt(r_HH)
+    //   intercept = (1 - sqrt(r_HH)) * mean_h
+    // Line passes through (mean_h, mean_h) — a perfectly calibrated
+    // oracle. mean_h is computed from the observed h's (same across
+    // models).
+    const meanH = points.reduce((s, p) => s + p.h, 0) / points.length;
+    const theorySlope = Math.sqrt(H2H_R);
+    const theoryIntercept = (1 - theorySlope) * meanH;
+    theoryDs.data = [
+      { x: 1, y: theorySlope * 1 + theoryIntercept },
+      { x: 5, y: theorySlope * 5 + theoryIntercept },
+    ];
+
+    // Inside-the-chart annotations: actual model's OLS on the left
+    // (tinted in the binned-mean line color), variance-matched-oracle
+    // ceiling on the right (gray, matching the theoretical dashed
+    // line). Reader can read the actual-vs-ceiling gap directly.
+    const { b, a, r } = computeScatterOLS(points);
+    const sign = a >= 0 ? "+" : "−";
+    const theorySign = theoryIntercept >= 0 ? "+" : "−";
+    chartScatter.options.plugins.olsAnnotation.blocks = [
+      {
+        align: "left",
+        color: scatterLineColor(modelKey),
+        lines: [
+          `AI = ${b.toFixed(2)} · Human ${sign} ${Math.abs(a).toFixed(2)}`,
+          `Correlation = ${r.toFixed(2)}`,
+        ],
+      },
+      {
+        align: "right",
+        color: "#888",
+        lines: [
+          `Theoretical best AI = ${theorySlope.toFixed(2)} · Human ${theorySign} ${Math.abs(theoryIntercept).toFixed(2)}`,
+          `Theoretical max correlation = ${theorySlope.toFixed(2)}`,
+        ],
+      },
+    ];
     chartScatter.update();
   }
 
@@ -1516,8 +1724,8 @@ function applyModelSelection(modelKey) {
     ? "All-model average vs human reference"
     : `${label} vs human reference`;
   if (scatterSub) scatterSub.textContent = (modelKey === "all")
-    ? "Each dot = one paper-reviewer pair (AI score averaged across the six models)"
-    : `Each dot = one paper-reviewer pair, scored by ${label}`;
+    ? "Each paper scored by two humans and all six AI models (AI score averaged across models)"
+    : `Each paper scored by two humans and ${label}`;
 }
 
 document.getElementById("model-select").addEventListener("change", (e) => {
@@ -1526,3 +1734,108 @@ document.getElementById("model-select").addEventListener("change", (e) => {
 
 // Initialize state
 applyModelSelection("all");
+
+// Findings "+ details" / "− details" expand-collapse toggles. Each
+// button has an aria-controls pointing at the corresponding details
+// div; click flips the hidden attribute and the aria-expanded state,
+// then re-syncs the sidebar's max-height (next block) so the sidebar
+// tracks the findings block's current height.
+document.querySelectorAll(".finding-toggle").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const targetId = btn.getAttribute("aria-controls");
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    const expanded = btn.getAttribute("aria-expanded") === "true";
+    btn.setAttribute("aria-expanded", String(!expanded));
+    target.hidden = expanded;
+    btn.textContent = expanded ? "+ details" : "− details";
+    syncSidebarHeight();
+  });
+});
+
+// Measure-then-position each finding's tools so all three layout rules
+// hold simultaneously: (1) claim text uses the full container width;
+// (2) tools are flush against the right edge; (3) tools sit on the
+// claim's last line unless that line is too full to fit them, in
+// which case they drop to a new line below — still right-aligned.
+function positionLeadTools(lead) {
+  const claim = lead.querySelector(".finding-claim");
+  const tools = lead.querySelector(".lead-tools");
+  if (!claim || !tools) return;
+
+  // Step 0: reset to natural inline state so we can measure cleanly.
+  tools.style.position = "";
+  tools.style.right = "";
+  tools.style.top = "";
+  tools.style.display = "";
+  lead.style.paddingBottom = "";
+  void lead.offsetHeight;
+
+  // Step 1: measure the tools' natural inline-flex box.
+  const toolsRect = tools.getBoundingClientRect();
+  const toolsWidth = toolsRect.width;
+  const toolsHeight = toolsRect.height;
+
+  // Step 2: hide the tools and measure the claim's natural last line
+  // (with no inline element competing for space on that line).
+  tools.style.display = "none";
+  void lead.offsetHeight;
+  const claimRects = claim.getClientRects();
+  if (claimRects.length === 0) {
+    tools.style.display = "";
+    return;
+  }
+  const lastLine = claimRects[claimRects.length - 1];
+  const leadRect = lead.getBoundingClientRect();
+  const spaceAfter = leadRect.right - lastLine.right;
+
+  // Step 3: position tools absolutely, either at right of last line
+  // or right-aligned on a new line below the claim.
+  tools.style.display = "";
+  tools.style.position = "absolute";
+  tools.style.right = "0";
+
+  // Visual breathing room between the claim's last word and the tools
+  // when they share a line. A small margin keeps them from touching.
+  const sameLineMargin = 14;
+  if (spaceAfter >= toolsWidth + sameLineMargin) {
+    // Fits on the claim's last line.
+    tools.style.top = `${lastLine.top - leadRect.top}px`;
+  } else {
+    // No room — drop tools to a new line below the claim, right-aligned.
+    tools.style.top = `${lastLine.bottom - leadRect.top}px`;
+    lead.style.paddingBottom = `${toolsHeight}px`;
+  }
+}
+
+function positionAllLeadTools() {
+  document.querySelectorAll(".finding-lead").forEach(positionLeadTools);
+}
+
+// Dynamically constrain the "Models covered" sidebar so its overall
+// height never exceeds the findings block's current height. The
+// .run-log inside is flex 1 1 auto with overflow-y: auto, so any
+// list overflow scrolls within the constrained sidebar.
+function syncSidebarHeight() {
+  const findings = document.querySelector(".findings");
+  const sidebar = document.querySelector(".sidebar");
+  if (!findings || !sidebar) return;
+  sidebar.style.maxHeight = `${findings.offsetHeight}px`;
+}
+
+positionAllLeadTools();
+syncSidebarHeight();
+
+// Fonts can finish loading after the first sync, which re-wraps the
+// claim text — re-run once they're ready so the position is correct.
+if (document.fonts && document.fonts.ready) {
+  document.fonts.ready.then(() => {
+    positionAllLeadTools();
+    syncSidebarHeight();
+  });
+}
+
+window.addEventListener("resize", () => {
+  positionAllLeadTools();
+  syncSidebarHeight();
+});

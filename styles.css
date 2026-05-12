@@ -9,7 +9,7 @@
   --accent: #2a2a2a;
   --accent-soft: #f4f4f0;
   --highlight: #fff39a;
-  --max-page: 1180px;
+  --max-page: 1500px;
   --col-main: 720px;
   --col-side: 160px;
   --col-gap: 4rem;
@@ -56,7 +56,9 @@ footer p {
   margin: 0.25rem 0;
 }
 
-/* ---------- Header & abstract: narrow column ---------- */
+/* ---------- Header & abstract: text column, aligned to the left
+   edge of the content-grid below so the eye reads a single column
+   from header → abstract → findings. ---------- */
 .page-header,
 .abstract {
   max-width: var(--col-main);
@@ -243,6 +245,78 @@ h3 {
   border-radius: 50%;
 }
 
+/* Lead line of a finding. Claim is plain inline text that wraps at
+   the full container width. The tools are positioned absolutely by
+   JS — either at the right edge of the claim's last line (if there's
+   room) or right-aligned on a new line just below the claim (if the
+   last line is too full). Three rules enforced together: claim uses
+   full width, tools flush right, no new line unless necessary. */
+.finding-lead {
+  margin: 0;
+  position: relative;
+}
+
+.finding-lead .finding-claim {
+  font-weight: 600;   /* semibold: distinguishes the claim without the
+                         visual saturation of four consecutive bolds */
+}
+
+.finding-lead .lead-tools {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  white-space: nowrap;   /* keep "→ Figure N" and the toggle together */
+  /* position / top set by JS in positionLeadTools(). */
+}
+
+/* Subtle "→ Figure N" jump link sitting next to the bold lead. */
+.fig-link {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  text-decoration: none;
+  white-space: nowrap;
+  border-bottom: 1px dotted var(--rule);
+  padding-bottom: 1px;
+}
+.fig-link:hover {
+  color: var(--ink);
+  border-bottom-color: var(--ink);
+}
+
+/* "+ details / − details" toggle. Reads as a small affordance, not a
+   primary control, so we keep it minimal. */
+.finding-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 0.1rem 0.55rem;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.finding-toggle:hover {
+  background: var(--accent-soft);
+  color: var(--ink);
+  border-color: var(--rule);
+}
+
+.finding-details {
+  margin: 0.55rem 0 0;
+  color: var(--ink);
+}
+.finding-details[hidden] {
+  display: none;
+}
+
 /* ---------- Figures (full-width sections, two blocks) ---------- */
 .figures-block {
   margin: 3rem 0 2.5rem;
@@ -290,15 +364,15 @@ h3 {
 
 .figures-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 2rem;
 }
 
-/* Single-figure rows render full-width with the chart taking the same
-   visual weight as a half-width pair from a two-figure row. Caps width
-   so the bars don't stretch unhelpfully on wide screens. */
+/* Legacy single-figure-per-row helper, kept for any future use where
+   one chart should sit centered at the width of a single column from
+   the three-figure grid. Not used in the current layout. */
 .figures-row-single {
-  grid-template-columns: minmax(0, 720px);
+  grid-template-columns: minmax(0, calc(33.333% - 1.333rem));
   justify-content: center;
 }
 
@@ -447,9 +521,20 @@ h3 {
   text-align: center;
 }
 
+.fig-chart .fig-eyebrow {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+  margin: 0 0 0.25rem;
+  text-align: center;
+}
+
 .fig-chart .chart-container {
   position: relative;
-  aspect-ratio: 5 / 3;
+  aspect-ratio: 10 / 7;
   padding: 0;
   background: transparent;
   border: none;
@@ -466,6 +551,7 @@ h3 {
   height: 100% !important;
   display: block;
 }
+
 
 /* Stacked summation: 5 above Σ, s=1 below Σ. Used inside info-tooltip. */
 .big-sum {
@@ -493,7 +579,7 @@ h3 {
 
 .fig-canvas {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 10 / 7;
   background: var(--accent-soft);
   border: 1px solid var(--rule-soft);
   border-radius: 4px;
@@ -542,14 +628,23 @@ h3 {
 /* ---------- Sidebar (Models covered) ---------- */
 .sidebar {
   align-self: start;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  /* max-height is set dynamically by JS to match the findings block's
+     current height (which changes as readers expand/collapse details). */
+}
+
+.sidebar h3 {
+  flex-shrink: 0;
 }
 
 .sidebar .run-log {
   list-style: none;
   padding: 0;
   margin: 0;
-  /* Cap height so a long list scrolls instead of pushing layout */
-  max-height: 70vh;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   /* Subtle scrollbar styling (WebKit) */
   scrollbar-width: thin;
@@ -597,7 +692,23 @@ a:hover {
   color: #555;
 }
 
-/* ---------- Mobile ---------- */
+/* ---------- Responsive: 3-col → 2-col → 1-col ---------- */
+/* On medium screens (laptops below 1200px viewport), the 3-col grid
+   would force figures below ~360 px each. Drop to 2-col with the
+   third figure spanning both columns so all three remain reasonably
+   sized. */
+@media (max-width: 1199px) {
+  .figures-row {
+    grid-template-columns: 1fr 1fr;
+  }
+  .figures-row > *:nth-child(3) {
+    grid-column: 1 / -1;
+    justify-self: center;
+    width: calc(50% - 1rem);
+  }
+}
+
+/* On small screens, stack everything. */
 @media (max-width: 920px) {
   .content-grid {
     grid-template-columns: 1fr;
@@ -611,6 +722,10 @@ a:hover {
   .figures-row {
     grid-template-columns: 1fr;
     gap: 2.5rem;
+  }
+  .figures-row > *:nth-child(3) {
+    grid-column: auto;
+    width: auto;
   }
   .figures-block-head.with-picker {
     flex-direction: column;
