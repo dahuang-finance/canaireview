@@ -1036,20 +1036,18 @@ function jitteredFor(key) {
   if (!SCATTER_DATA || !SCATTER_DATA[key]) return [];
   const pts = SCATTER_DATA[key].points;
   const rand = seededRandom(key.charCodeAt(0) * 9973 + (key.length * 17));
-  // Individual-h on x-axis: integer human scores (1,2,3,4,5) with rare
-  // half-integer 4.5 -> need wider horizontal jitter to spread the
-  // ~3,890 points across each score bin. AI on y-axis is also integer
-  // (or half-integer at the boundary), wider jitter helps there too.
-  // "all" uses the model-averaged AI score which is more continuous, so
-  // jitter can be a touch smaller.
-  const xJ = key === "all" ? 0.18 : 0.22;
-  const yJ = key === "all" ? 0.10 : 0.22;
+  // Jitter narrow enough that an integer-score dot doesn't visually
+  // bleed into the half-score region (e.g., a dot at h=2 should not
+  // smear close to h=2.5). The "all" view uses the model-averaged AI
+  // score which is naturally continuous, so it needs even less jitter.
+  const xJ = key === "all" ? 0.04 : 0.12;
+  const yJ = key === "all" ? 0.04 : 0.12;
   // Random subsample of the dot cloud for visual clarity. With ~3,890
-  // points stacked at five integer x-values, the cloud is far denser
-  // than the eye can read. Thinning to ~75% reduces saturation and
+  // points stacked at five integer x-values the cloud is far denser
+  // than the eye can read; thinning to ~40% reduces saturation and
   // lets the binned-mean markers show through without distorting the
   // visible distribution.
-  const KEEP_FRACTION = 0.75;
+  const KEEP_FRACTION = 0.40;
   const out = [];
   for (const p of pts) {
     const u = rand() + 0.5;            // 0..1 from seededRandom's -0.5..0.5
