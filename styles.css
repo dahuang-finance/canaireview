@@ -319,17 +319,44 @@ h3 {
 
 /* ---------- Figures (full-width sections, two blocks) ---------- */
 .figures-block {
-  margin: 3rem 0 2.5rem;
+  margin: 3rem 0 1.5rem;
 }
 
+/* Tight gap between the two blocks so vertical pairing (Fig 1↔4,
+   2↔5, 3↔6) is easy to scan without big scroll jumps. The second
+   block uses a small inline eyebrow label instead of a full header. */
 .figures-block + .figures-block {
-  margin-top: 3.5rem;
-  padding-top: 2.5rem;
-  border-top: 1px solid var(--rule-soft);
+  margin-top: 1.5rem;
 }
 
 .figures-block-head {
   margin-bottom: 1.4rem;
+}
+
+/* Compact one-line label used in both figure blocks. With the
+   .with-picker modifier, the label sits on the left and the model
+   picker sits on the right, both vertically centered. */
+.block-eyebrow-only {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 1rem;
+}
+
+.block-eyebrow-only.with-picker {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.block-eyebrow-only .block-eyebrow-text {
+  margin: 0;
+  /* Inherits font-family / size / case from the parent .block-eyebrow-only */
 }
 
 .figures-block-head.with-picker {
@@ -465,25 +492,27 @@ h3 {
 .info-tooltip {
   display: none;
   position: absolute;
-  bottom: calc(100% + 10px);
+  bottom: calc(100% + 12px);
   left: 50%;
   transform: translateX(-50%);
-  width: 320px;
+  width: 360px;
   max-width: 80vw;
-  padding: 0.7rem 0.9rem;
-  background: #1f1f1f;
-  color: #f4f4f4;
+  padding: 0.95rem 1.1rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule);
   border-radius: 4px;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 400;
   letter-spacing: normal;
   text-transform: none;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  line-height: 1.55;
+  line-height: 1.6;
   z-index: 100;
   text-align: left;
   pointer-events: none;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.10),
+              0 3px 10px rgba(0,0,0,0.05);
   font-style: normal;
 }
 
@@ -491,16 +520,63 @@ h3 {
   content: "";
   position: absolute;
   top: 100%;
-  left: 50%;
+  left: calc(50% + var(--arrow-offset, 0px));
   transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: #1f1f1f;
+  border: 7px solid transparent;
+  border-top-color: var(--rule);
+}
+
+.info-tooltip::before {
+  content: "";
+  position: absolute;
+  top: calc(100% - 1px);
+  left: calc(50% + var(--arrow-offset, 0px));
+  transform: translateX(-50%);
+  border: 7px solid transparent;
+  border-top-color: var(--paper);
+  z-index: 1;
+}
+
+.info-tooltip.flipped {
+  bottom: auto;
+  top: calc(100% + 12px);
+}
+
+.info-tooltip.flipped::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: var(--rule);
+}
+
+.info-tooltip.flipped::before {
+  top: auto;
+  bottom: calc(100% - 1px);
+  border-top-color: transparent;
+  border-bottom-color: var(--paper);
+}
+
+.tip-cite {
+  display: block;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--rule-soft);
+  font-size: 0.74rem;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .info-trigger:hover .info-tooltip,
 .info-trigger:focus .info-tooltip,
-.info-trigger:focus-within .info-tooltip {
+.info-trigger:focus-within .info-tooltip,
+.link-tip-host:hover .info-tooltip,
+.link-tip-host:focus-within .info-tooltip {
   display: block;
+}
+
+.link-tip-host {
+  position: relative;
+  display: inline;
 }
 
 .fig-placeholder,

@@ -21,16 +21,22 @@
 // applied — consistent with the website's "no written comment" claim).
 // n ranges from 1,799 to 1,946 papers depending on the model.
 // Release dates verified via vendor announcements (Nov 2025 - Apr 2026).
+// pred_top, pred_mid = |β_H|/|β_AI| in the top-tail and middle score
+// regions, computed from each model's Poisson PML citation regression.
+// Top values > 1 (humans dominate top tail). Middle values < 1 (AI
+// dominates middle). Plotting both on a log scale makes the symmetry
+// visible: as AI improves, top decreases toward 1 from above and
+// middle decreases away from 1 below.
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 4.03, pred_mid: 0.261 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 2.30, pred_mid: 0.238 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291, pred_top: 1.33, pred_mid: 0.097 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 3.00, pred_mid: 0.714 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196, pred_top: 28.36, pred_mid: 0.398 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209, pred_top: 4.65, pred_mid: 0.105 },
   ],
 };
 
@@ -187,10 +193,10 @@ if (window["chartjs-plugin-annotation"]) {
 const POINT_BASE = {
   pointRadius: 6,
   pointHoverRadius: 9,
-  pointBorderWidth: 2.2,
+  pointBorderWidth: 2.4,
   pointBackgroundColor: "#fff",
-  borderWidth: 2.4,
-  tension: 0.04,
+  borderWidth: 2.8,
+  tension: 0.22,    // gentle bezier-like curve between releases
 };
 
 // ============================================================
@@ -244,6 +250,14 @@ function makeYAxisConfig({ min, max, topLabel, bottomLabel, tickDecimals = 0 }) 
       afterBuildTicks: function (scale) {
         scale.ticks = [{ value: min }, { value: max }];
       },
+      // Force a consistent y-axis box across charts in the trend row
+      // so wider tick labels (e.g. "0.435") don't shrink the plot
+      // area relative to charts with narrow labels (e.g. "2"). The
+      // width has to accommodate the widest label across all charts
+      // in the row plus the tick padding.
+      afterFit: function (scale) {
+        scale.width = 44;
+      },
       ticks: {
         autoSkip: false,
         padding: 6,
@@ -279,6 +293,47 @@ const Y_CFG_CORR = makeYAxisConfig({
   tickDecimals: 3,
 });
 
+// Predictive-edge chart (Figure 6). Y is the ratio |β_H| / |β_AI| in
+// the TOP TAIL score region (mean ≤ 1.5) on a LOG scale, which is
+// the natural scale for a ratio of two estimates and which gracefully
+// handles outliers (GPT-5.4's β_AI was nearly zero, blowing up its
+// point estimate). Values above 1 = humans dominate; values closer
+// to 1 = AI is closing the gap. Reference at y=1 = parity.
+const Y_CFG_PRED = {
+  axis: {
+    type: "logarithmic",
+    // Range chosen to fit both regions on one chart:
+    //   top-tail ratios live in ~1 to ~30
+    //   middle  ratios live in ~0.1 to ~1
+    min: 0.05, max: 50,
+    afterFit: (scale) => { scale.width = 44; },
+    afterBuildTicks: (scale) => {
+      scale.ticks = [
+        { value: 0.1 }, { value: 1 }, { value: 10 },
+      ];
+    },
+    ticks: {
+      autoSkip: false,
+      padding: 6,
+      color: "#666",
+      font: { size: 10 },
+      maxRotation: 0,
+      callback: (v) => {
+        if (v === 1)  return "1";
+        if (v === 10) return "10";
+        if (Math.abs(v - 0.1) < 1e-6) return "0.1";
+        return "";
+      },
+    },
+    grid: { display: false },
+    border: { color: "#bbb" },
+  },
+  corner: {
+    topLabel: "humans predict citations better",
+    bottomLabel: "AI predicts citations better",
+  },
+};
+
 // Plugin: draws the top and bottom semantic-pole labels in the corners
 // of the chart's plot area, hugging the left edge. Uses italic gray text
 // so it reads as an annotation, not a data label.
@@ -308,6 +363,101 @@ const cornerLabelsPlugin = {
 };
 Chart.register(cornerLabelsPlugin);
 
+// Plugin: draws italic gray text anchored to a specific y-value in the
+// data space, used for Tufte-style direct labeling of reference lines
+// (e.g., the human-to-human correlation dashed line on the trend
+// chart). Each label: { y, text, align?, offset? }.
+const yAnchoredLabelPlugin = {
+  id: "yAnchoredLabel",
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins.yAnchoredLabel;
+    if (!cfg || !cfg.labels || !cfg.labels.length) return;
+    const yScale = chart.scales.y;
+    const xScale = chart.scales.x;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = "italic 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
+    ctx.fillStyle = "#888";
+    for (const label of cfg.labels) {
+      if (label.y == null || !label.text) continue;
+      const yPx = yScale.getPixelForValue(label.y);
+      const align = label.align === "right" ? "right" : "left";
+      ctx.textAlign = align;
+      ctx.textBaseline = "bottom";   // text sits just above the line
+      const x = align === "right" ? xScale.right - 4 : xScale.left + 4;
+      const offsetY = (label.offset != null) ? label.offset : -3;
+      ctx.fillText(label.text, x, yPx + offsetY);
+    }
+    ctx.restore();
+  },
+};
+Chart.register(yAnchoredLabelPlugin);
+
+// Plugin: callout — italic gray label positioned anywhere in the
+// plot area, with a thin leader line + small arrowhead pointing to
+// a specific (anchorX, anchorY) target. Used when a feature being
+// labeled sits in a region too crowded with data to host the text
+// itself (e.g., the dashed h-to-h reference line on the trend chart,
+// which is surrounded by both vendors' error bars).
+const calloutPlugin = {
+  id: "callout",
+  afterDatasetsDraw(chart) {
+    const cfg = chart.options.plugins.callout;
+    if (!cfg || !cfg.items || !cfg.items.length) return;
+    const yScale = chart.scales.y;
+    const xScale = chart.scales.x;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.font = "italic 10px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
+
+    for (const item of cfg.items) {
+      ctx.fillStyle = "#888";
+      ctx.strokeStyle = "#888";
+      ctx.lineWidth = 0.8;
+
+      // Text in italic gray, top-left aligned to a data-space y.
+      ctx.textAlign = "left";
+      ctx.textBaseline = "top";
+      const textX = xScale.left + 6;
+      const textY = yScale.getPixelForValue(item.textY);
+      ctx.fillText(item.text, textX, textY);
+
+      // Leader: short vertical line + arrowhead pointing AT the
+      // anchor line, automatically flipping its start side and
+      // arrow direction based on whether the anchor is above or
+      // below the text. Default x sits just inside the plot's left
+      // edge — the empty Oct/early-Nov zone before any data point.
+      const textHeight = 10;
+      const fromX = (item.leaderX != null)
+        ? item.leaderX
+        : xScale.left + 8;
+      const textTopPx = textY;
+      const textBottomPx = textY + textHeight;
+      const toY = yScale.getPixelForValue(item.anchorY);
+      const anchorAbove = toY < textTopPx;
+      const fromY = anchorAbove ? textTopPx - 2 : textBottomPx + 2;
+      const toX = fromX;
+
+      ctx.beginPath();
+      ctx.moveTo(fromX, fromY);
+      ctx.lineTo(toX, toY);
+      ctx.stroke();
+
+      // Small arrowhead — V shape opens away from the line so it
+      // visually points AT the line, regardless of direction.
+      const ah = 3.2;
+      const ay = anchorAbove ? toY + ah : toY - ah;
+      ctx.beginPath();
+      ctx.moveTo(toX - ah, ay);
+      ctx.lineTo(toX, toY);
+      ctx.lineTo(toX + ah, ay);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+};
+Chart.register(calloutPlugin);
+
 // Plugin: draws multi-line italic annotation blocks in the upper
 // corners of the plot area. Used by the scatter chart for an inside-
 // the-chart "legend" — actual model's OLS on the left (tinted in the
@@ -325,17 +475,58 @@ const olsAnnotationPlugin = {
     ctx.save();
     ctx.font = "italic 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
     ctx.textBaseline = "top";
-    for (const block of cfg.blocks) {
+
+    // Measure each block's max line width so we can detect whether the
+    // left and right blocks would visually collide at the current chart
+    // width. At narrow chart sizes we suppress the right block (which
+    // carries the theoretical-best numbers) rather than let it overlap
+    // the left block — the dashed line itself still communicates the
+    // theoretical ceiling.
+    const measureBlockWidth = (lines) => {
+      let max = 0;
+      for (const line of lines) {
+        const w = ctx.measureText(line).width;
+        if (w > max) max = w;
+      }
+      return max;
+    };
+
+    const leftBlocks  = cfg.blocks.filter((b) => b.align !== "right");
+    const rightBlocks = cfg.blocks.filter((b) => b.align === "right");
+    const plotLeft  = xScale.left + 8;
+    const plotRight = xScale.right - 8;
+    const plotWidth = plotRight - plotLeft;
+    const leftMaxW  = leftBlocks.reduce(
+      (m, b) => Math.max(m, measureBlockWidth(b.lines || [])), 0);
+    const rightMaxW = rightBlocks.reduce(
+      (m, b) => Math.max(m, measureBlockWidth(b.lines || [])), 0);
+    const overlap = leftMaxW + rightMaxW + 24 > plotWidth;
+
+    // Draw left blocks always.
+    for (const block of leftBlocks) {
       const lines = block.lines || [];
       if (!lines.length) continue;
-      const align = block.align === "right" ? "right" : "left";
-      ctx.textAlign = align;
+      ctx.textAlign = "left";
       ctx.fillStyle = block.color || "#777";
-      const x = align === "right" ? xScale.right - 8 : xScale.left + 8;
       let y = yScale.top + 4;
       for (const line of lines) {
-        ctx.fillText(line, x, y);
+        ctx.fillText(line, plotLeft, y);
         y += 14;
+      }
+    }
+
+    // Draw right blocks only when there's room.
+    if (!overlap) {
+      for (const block of rightBlocks) {
+        const lines = block.lines || [];
+        if (!lines.length) continue;
+        ctx.textAlign = "right";
+        ctx.fillStyle = block.color || "#777";
+        let y = yScale.top + 4;
+        for (const line of lines) {
+          ctx.fillText(line, plotRight, y);
+          y += 14;
+        }
       }
     }
     ctx.restore();
@@ -480,20 +671,36 @@ function tooltipCallbacks(metricLabel) {
   };
 }
 
-// Per-point styling: highlighted point is the same vendor color, but
-// solidly filled (no white interior) and bigger. Default stays outlined.
+// Per-point styling. Two emphasis paths:
+//   (1) When a model is picked via the dropdown, that point gets filled
+//       solid in the vendor color and bumped up in radius.
+//   (2) When NO model is picked, the LATEST release of each vendor is
+//       softly emphasized (filled, larger) so the eye lands on "where
+//       we are now" while the older releases stay outlined as context.
+function latestKeyOf(vendor) {
+  const arr = TREND_DATA[vendor];
+  return arr[arr.length - 1].key;
+}
+function isFocus(vendor, modelEntry, selectedKey) {
+  if (selectedKey) return modelEntry.key === selectedKey;
+  return modelEntry.key === latestKeyOf(vendor);
+}
 function pointRadii(vendor, selectedKey) {
   const s = SHAPE_SCALE[vendor];
   return TREND_DATA[vendor].map(m =>
-    m.key === selectedKey ? HIGH_RADIUS * s : BASE_RADIUS * s
+    isFocus(vendor, m, selectedKey) ? HIGH_RADIUS * s : BASE_RADIUS * s
   );
 }
 function pointBorderWidths(vendor, selectedKey) {
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? 0 : 2.2);
+  return TREND_DATA[vendor].map(m =>
+    isFocus(vendor, m, selectedKey) ? 0 : 2.4
+  );
 }
 function pointFillColors(vendor, selectedKey) {
   const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
-  return TREND_DATA[vendor].map(m => m.key === selectedKey ? base : "#fff");
+  return TREND_DATA[vendor].map(m =>
+    isFocus(vendor, m, selectedKey) ? base : "#fff"
+  );
 }
 function pointBorderColors(vendor, selectedKey) {
   const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
@@ -745,8 +952,11 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
             boxWidth: 8, boxHeight: 8, padding: 14,
             font: { size: 11 }, color: "#333",
             // Hide datasets whose label starts with "_" (CI band fills
-            // for the human-to-human band, drawn at order=0).
-            filter: (item) => !item.text.startsWith("_"),
+            // drawn at order=0) AND the human-to-human reference
+            // line, which is now labeled directly on the chart in
+            // Tufte style instead of via a legend entry.
+            filter: (item) => !item.text.startsWith("_") &&
+                              !item.text.startsWith("Human-to-human"),
             // Pin legend display order to dataset-array order. Without
             // this, Chart.js sorts legend items by dataset.order which
             // we use for z-depth, so the visible legend can disagree
@@ -773,6 +983,121 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
 
 const chartL1   = buildLineChart("chart-l1",   "l1",   "L₁", Y_CFG_L1);
 const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
+
+// Figure 6's chart has 4 series instead of 2 — top-tail and middle
+// regions for each vendor — so it doesn't fit buildLineChart's
+// 2-vendor template. Build it explicitly.
+function predDataset(vendor, region) {
+  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  const metric = region === "top" ? "pred_top" : "pred_mid";
+  const isSolid = region === "top";
+  return {
+    label: `${vendor === "opus" ? "Opus" : "GPT"} · ${region === "top" ? "top tail" : "middle"}`,
+    data: TREND_DATA[vendor].map((m) => ({ x: m.date, y: m[metric] })),
+    borderColor: base,
+    borderDash: isSolid ? [] : [3, 3],
+    pointStyle: SHAPES[vendor],
+    pointRadius: BASE_RADIUS * SHAPE_SCALE[vendor],
+    pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE[vendor],
+    pointBorderWidth: 2.4,
+    pointBackgroundColor: "#fff",
+    pointBorderColor: base,
+    borderWidth: 2.4,
+    tension: 0.22,
+    order: 2,
+  };
+}
+
+const chartPred = new Chart(document.getElementById("chart-pred"), {
+  type: "line",
+  data: {
+    datasets: [
+      predDataset("opus", "top"),
+      predDataset("gpt",  "top"),
+      predDataset("opus", "mid"),
+      predDataset("gpt",  "mid"),
+    ],
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: "nearest", intersect: true },
+    layout: { padding: { top: 8, right: 18, bottom: 4, left: 4 } },
+    animation: { duration: 600, easing: "easeOutCubic" },
+    plugins: {
+      legend: {
+        position: "top", align: "end",
+        labels: {
+          usePointStyle: true,
+          boxWidth: 14, boxHeight: 10, padding: 14,
+          font: { size: 11 }, color: "#333",
+          // Compact 2-item vendor legend. The region (top tail vs
+          // middle) is communicated in-chart via direct labels and
+          // line style (solid vs dashed), not via the legend.
+          // `hidden` is computed from current visibility so the
+          // legend item gets the strikethrough state when toggled.
+          generateLabels: (chart) => [
+            { text: "Anthropic Opus", fillStyle: "transparent",
+              strokeStyle: COLORS.opus, lineWidth: 2.4,
+              pointStyle: SHAPES.opus,
+              hidden: !chart.isDatasetVisible(0),
+              datasetIndex: 0 },
+            { text: "OpenAI GPT", fillStyle: "transparent",
+              strokeStyle: COLORS.gpt, lineWidth: 2.4,
+              pointStyle: SHAPES.gpt,
+              hidden: !chart.isDatasetVisible(1),
+              datasetIndex: 1 },
+          ],
+        },
+        // Click on a vendor toggles BOTH datasets for that vendor
+        // (top-tail dataset at index v, middle dataset at index v+2).
+        // Vendor-lock: if the model picker has selected this vendor,
+        // refuse to hide it.
+        onClick: (e, legendItem, legend) => {
+          const chart = legend.chart;
+          const vendorIdx = legendItem.datasetIndex; // 0=opus, 1=gpt
+          const vendor = vendorIdx === 0 ? "opus" : "gpt";
+          if (vendorOfKey(currentSelection) === vendor) return;
+          const topIdx = vendorIdx;
+          const midIdx = vendorIdx + 2;
+          const willBeVisible = !chart.isDatasetVisible(topIdx);
+          chart.setDatasetVisibility(topIdx, willBeVisible);
+          chart.setDatasetVisibility(midIdx, willBeVisible);
+          legendItem.hidden = !willBeVisible;
+          chart.update();
+        },
+      },
+      tooltip: {
+        backgroundColor: "rgba(20,20,20,0.92)",
+        padding: 10,
+        titleFont: { weight: "600", size: 12 },
+        bodyFont: { size: 12 },
+        callbacks: {
+          title: (items) => {
+            if (!items.length) return "";
+            const ds = items[0].dataset;
+            return ds.label;
+          },
+          label: (item) => {
+            const v = Number(item.parsed.y);
+            return `|β_H| / |β_AI| = ${v.toFixed(2)}  (released ${fmtDate(item.parsed.x)})`;
+          },
+        },
+        filter: (item) => !item.dataset.label.startsWith("_"),
+      },
+      cornerLabels: Y_CFG_PRED.corner,
+      // Direct in-chart region labels — replace the role a 4-item
+      // legend would play.
+      yAnchoredLabel: {
+        labels: [
+          { y: 2.4, text: "top tail (solid)",  align: "right", offset: -1 },
+          { y: 0.42, text: "middle (dashed)", align: "right", offset: -1 },
+        ],
+      },
+    },
+    scales: { x: X_AXIS_TIME, y: Y_CFG_PRED.axis },
+  },
+});
 
 // Post-build setup for chart-corr:
 //   (i) per-vendor CI as whiskers (custom plugin reads visibility flags
@@ -839,7 +1164,52 @@ chartCorr.data.datasets.push(
     order: 1,
   },
 );
+// Tufte-style callout for the dashed H2H reference line — text
+// floats in the upper-left region (below the "theoretical maximum"
+// label) with a thin leader line + arrowhead pointing down to the
+// line at y=0.189. Avoids overlap with both vendors' error bars
+// that cluster around the reference line in the middle of the chart.
+chartCorr.options.plugins.callout = {
+  items: [
+    {
+      text: `human-to-human correlation = ${H2H_R.toFixed(3)}`,
+      textY: 0.33,   // text sits at this y (upper-left region)
+      anchorY: H2H_R, // leader arrow points to the dashed line
+    },
+  ],
+};
 chartCorr.update();
+
+// ----- Figure 6: predictive-edge chart -----
+// Dashed reference line at y=1 (parity). Top-tail lines sit above
+// it (humans dominate); middle lines sit below (AI dominates). The
+// log axis makes the symmetry around this line visible.
+chartPred.data.datasets.push({
+  label: "_parity_ref",
+  data: [{ x: X_MIN, y: 1 }, { x: X_MAX, y: 1 }],
+  borderColor: H2H_LINE_COLOR,
+  borderDash: [5, 4],
+  borderWidth: 1.4,
+  pointRadius: 0,
+  pointHoverRadius: 0,
+  pointStyle: "line",
+  fill: false,
+  order: 1,
+});
+
+// Callout for the parity reference. Text sits just below the line
+// (in the empty band between the parity line and the middle-region
+// data), arrow pointing UP to the line.
+chartPred.options.plugins.callout = {
+  items: [
+    {
+      text: "AI matches humans at this line",
+      textY: 0.5,
+      anchorY: 1,
+    },
+  ],
+};
+chartPred.update();
 
 // ============================================================
 // Highlight selected model in top charts
@@ -851,19 +1221,24 @@ function applyHighlight(modelKey) {
   // quirk where switching from per-point arrays back to a scalar leaves
   // the array values cached on individual point elements.
   const key = (!modelKey || modelKey === "all") ? null : modelKey;
+  const setVendorStyle = (ds, vendor) => {
+    ds.pointRadius           = pointRadii(vendor, key);
+    ds.pointBorderWidth      = pointBorderWidths(vendor, key);
+    ds.pointBorderColor      = pointBorderColors(vendor, key);
+    ds.pointBackgroundColor  = pointFillColors(vendor, key);
+  };
   for (const chart of [chartL1, chartCorr]) {
-    const dsOpus = chart.data.datasets[0];
-    const dsGpt  = chart.data.datasets[1];
-    dsOpus.pointRadius           = pointRadii("opus", key);
-    dsOpus.pointBorderWidth      = pointBorderWidths("opus", key);
-    dsOpus.pointBorderColor      = pointBorderColors("opus", key);
-    dsOpus.pointBackgroundColor  = pointFillColors("opus", key);
-    dsGpt.pointRadius            = pointRadii("gpt",  key);
-    dsGpt.pointBorderWidth       = pointBorderWidths("gpt",  key);
-    dsGpt.pointBorderColor       = pointBorderColors("gpt",  key);
-    dsGpt.pointBackgroundColor   = pointFillColors("gpt",  key);
+    setVendorStyle(chart.data.datasets[0], "opus");
+    setVendorStyle(chart.data.datasets[1], "gpt");
     chart.update();
   }
+  // chartPred has 4 vendor datasets: opus_top=0, gpt_top=1, opus_mid=2, gpt_mid=3
+  const p = chartPred.data.datasets;
+  setVendorStyle(p[0], "opus");
+  setVendorStyle(p[1], "gpt");
+  setVendorStyle(p[2], "opus");
+  setVendorStyle(p[3], "gpt");
+  chartPred.update();
 }
 
 // ============================================================
@@ -1046,13 +1421,8 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
             ];
           },
         },
-        // Human reference is synthetic; click does nothing on it.
-        onClick: (e, item, legend) => {
-          if (item.datasetIndex < 0) return;
-          const visible = legend.chart.isDatasetVisible(item.datasetIndex);
-          legend.chart.setDatasetVisibility(item.datasetIndex, !visible);
-          legend.chart.update();
-        },
+        // Click does nothing — these series aren't user-toggleable.
+        onClick: () => {},
       },
       tooltip: {
         backgroundColor: "rgba(20,20,20,0.92)",
@@ -1326,7 +1696,7 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
             const lineDs = chart.data.datasets[2];
             return [
               {
-                text: "Human reviews (one dot each)",
+                text: "Human reviews",
                 fillStyle: dotDs.backgroundColor,
                 strokeStyle: dotDs.backgroundColor,
                 lineWidth: 0,
@@ -1335,7 +1705,7 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
                 datasetIndex: 0,
               },
               {
-                text: "AI mean by human-score bin",
+                text: "AI mean per bin",
                 fillStyle: lineDs.borderColor,
                 strokeStyle: lineDs.borderColor,
                 lineWidth: 2,
@@ -1370,9 +1740,16 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
       x: {
         type: "linear",
         min: 0.6, max: 5.4,
+        // Chart.js's auto-tick generator drops 1 and 5 because they
+        // sit too close to the boundary values (0.6, 5.4). Force the
+        // exact tick list so all five integer labels render at every
+        // chart width.
+        afterBuildTicks: (axis) => {
+          axis.ticks = [1, 2, 3, 4, 5].map((v) => ({ value: v }));
+        },
         ticks: {
-          stepSize: 1,
-          callback: (v) => (v === Math.floor(v) && v >= 1 && v <= 5) ? v : "",
+          autoSkip: false,
+          callback: (v) => v,
           color: "#444",
           font: { size: 11 },
         },
@@ -1390,11 +1767,14 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         type: "linear",
         // Extend the upper bound past the data so the OLS annotation
         // in the top-left has clean white space and doesn't sit on
-        // top of dots. Ticks callback below still only labels 1-5.
+        // top of dots.
         min: 0.6, max: 6.0,
+        afterBuildTicks: (axis) => {
+          axis.ticks = [1, 2, 3, 4, 5].map((v) => ({ value: v }));
+        },
         ticks: {
-          stepSize: 1,
-          callback: (v) => (v === Math.floor(v) && v >= 1 && v <= 5) ? v : "",
+          autoSkip: false,
+          callback: (v) => v,
           color: "#444",
           font: { size: 11 },
         },
@@ -1486,6 +1866,8 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
           boxWidth: 10, boxHeight: 10, padding: 14,
           font: { size: 11 }, color: "#333",
         },
+        // Click does nothing — these series aren't user-toggleable.
+        onClick: () => {},
       },
       tooltip: {
         backgroundColor: "rgba(20,20,20,0.92)",
@@ -1542,7 +1924,7 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         ticks: { color: "#444", font: { size: 10 } },
         title: {
           display: true,
-          text: "|β|  (citation-prediction coefficient, larger = stronger)",
+          text: "Citation predictive power",
           padding: 8,
           color: "#666",
           font: { size: 10.5 },
@@ -1597,7 +1979,7 @@ let _resizeDebounce;
 window.addEventListener("resize", () => {
   clearTimeout(_resizeDebounce);
   _resizeDebounce = setTimeout(() => {
-    const charts = [chartL1, chartCorr, chartHist, chartScatter, chartPredictive];
+    const charts = [chartL1, chartCorr, chartPred, chartHist, chartScatter, chartPredictive];
     for (const c of charts) {
       if (c && typeof c.resize === "function") {
         try { c.resize(); } catch (_) { /* noop */ }
@@ -1626,8 +2008,10 @@ function applyModelSelection(modelKey) {
   const label = MODEL_LABELS[modelKey];
   currentSelection = modelKey;
 
-  // If a specific vendor is now selected, make sure that series is
-  // visible in the top charts (un-hide if it had been toggled off).
+  // If a specific vendor is now selected, make sure that vendor's
+  // series is visible everywhere (un-hide if it had been toggled
+  // off via the legend). For chartPred there are TWO datasets per
+  // vendor (top tail at index v, middle at v+2).
   const vendor = vendorOfKey(modelKey);
   if (vendor) {
     const dsIdx = vendor === "opus" ? 0 : 1;
@@ -1635,6 +2019,12 @@ function applyModelSelection(modelKey) {
       if (!chart.isDatasetVisible(dsIdx)) {
         chart.setDatasetVisibility(dsIdx, true);
       }
+    }
+    if (!chartPred.isDatasetVisible(dsIdx)) {
+      chartPred.setDatasetVisibility(dsIdx, true);
+    }
+    if (!chartPred.isDatasetVisible(dsIdx + 2)) {
+      chartPred.setDatasetVisibility(dsIdx + 2, true);
     }
   }
 
@@ -1709,12 +2099,12 @@ function applyModelSelection(modelKey) {
   // Predictive-edge chart: paired bars by score region
   applyPredictiveSelection(modelKey);
 
-  // Section title updates dynamically based on selection
+  // Section 1's inline eyebrow updates based on selection.
   const blockTitle = document.getElementById("drilldown-title");
   if (blockTitle) {
     blockTitle.textContent = (modelKey === "all")
-      ? "Look across all six models"
-      : `Look inside ${label}`;
+      ? "Findings 1–3 · Look across all six models"
+      : `Findings 1–3 · Look inside ${label}`;
   }
 
   // Per-figure subtitles
@@ -1724,13 +2114,28 @@ function applyModelSelection(modelKey) {
     ? "All-model average vs human reference"
     : `${label} vs human reference`;
   if (scatterSub) scatterSub.textContent = (modelKey === "all")
-    ? "Each paper scored by two humans and all six AI models (AI score averaged across models)"
+    ? "Each paper scored by two humans and six AI models (averaged)"
     : `Each paper scored by two humans and ${label}`;
 }
 
-document.getElementById("model-select").addEventListener("change", (e) => {
-  applyModelSelection(e.target.value);
-});
+// Two synced model pickers — one at the top (Section 1, Findings 1-3)
+// and one with the trend block (Section 2, Finding 4). Changing either
+// mirrors the value into the other and re-runs applyModelSelection.
+const modelPickers = [
+  document.getElementById("model-select"),
+  document.getElementById("model-select-2"),
+].filter(Boolean);
+
+function selectModel(value) {
+  for (const p of modelPickers) {
+    if (p.value !== value) p.value = value;
+  }
+  applyModelSelection(value);
+}
+
+for (const picker of modelPickers) {
+  picker.addEventListener("change", (e) => selectModel(e.target.value));
+}
 
 // Initialize state
 applyModelSelection("all");

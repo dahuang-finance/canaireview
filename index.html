@@ -23,16 +23,12 @@
         AI is being deployed at speed to review scientific work for
         conferences, journals, and grant panels.
         <strong class="big-question">But <span class="cair">can AI review</span>?</strong>
-        We use submissions to the
-        <a href="https://utahwfc.org/" target="_blank" rel="noopener">Utah Winter Finance Conference</a>
-        (UWFC), one of the most selective and longest running boutique
-        finance conferences, to find out.
-        Each UWFC paper is scored by two members of the program committee
-        on a 1 (best) to 5 (worst) scale. The committee is a rotating pool
-        of 121 leading finance researchers from 2016 to 2025.<sup><a class="fn-marker" href="#fn-anon" id="fn-anon-ref">&dagger;</a></sup>
-        AI is asked to score each paper the same way, on the same scale.
-        We repeat the study for every new frontier flagship release from OpenAI and Anthropic since November 2025 (and we plan to do the same for future releases).
-        Detailed methodology in the
+        To find out, we use submissions to the
+        <span class="link-tip-host"><a href="https://utahwfc.org/" target="_blank" rel="noopener">Utah Winter Finance Conference</a><span class="info-tooltip" role="tooltip">One of the most selective, longest-running, and highest-quality boutique finance conferences.<span class="tip-cite">Reinartz, S. J., and D. Urban, 2017, Finance conference quality and publication success: A conference ranking, <em>Journal of Empirical Finance</em> 42, 155&ndash;174.</span></span></span>
+        (UWFC), where each paper is scored 1 (best) to 5 (worst) by two members of the program committee &mdash; a rotating pool of 121 leading finance researchers from 2016 to 2025.<sup><a class="fn-marker" href="#fn-anon" id="fn-anon-ref">&dagger;</a></sup>
+        We ask AI to score the same papers the same way, then compare its scores against the humans'.
+        We repeat the study for every new frontier flagship release from OpenAI and Anthropic since November 2025, and will continue with each new release.
+        Methodology in the
         <a href="#" class="placeholder-link">companion paper</a>
         <span class="muted">(coming soon)</span>.
       </p>
@@ -64,14 +60,14 @@
                 </p>
                 <div class="finding-details" id="finding-1-details" hidden>
                   Humans use the full 1&ndash;5 range, giving the top
-                  score (1) to 12% of papers and the bottom score (5) to
-                  7%. The best frontier AI models give the top score to
-                  fewer than 4% of papers, the bottom score to fewer than
-                  2%, and pile 74&ndash;80% of their scores at 2 or 3.
-                  Prompting AI to be more or less critical does not fix
-                  the compression problem &mdash; it just shifts the whole
-                  distribution without singling out exceptional or weak
-                  papers.
+                  score (1) to 12% of papers and the bottom score (5)
+                  to 7%. The best frontier AI models give the top score
+                  to fewer than 4% of the papers and the bottom score
+                  to fewer than 2%, and allocate 74&ndash;80% of their
+                  scores to 2 or 3. Prompting AI to be more or less
+                  critical does not fix the compression problem &mdash;
+                  it just shifts the whole distribution without singling
+                  out exceptional or weak papers.
                 </div>
               </li>
               <li>
@@ -87,27 +83,26 @@
                   </span>
                 </p>
                 <div class="finding-details" id="finding-2-details" hidden>
-                  Opus 4.7's score correlates with a randomly chosen human
-                  reviewer at 0.26. Two randomly chosen human reviewers
-                  correlate with each other at 0.19, comparable to the
-                  referee-pair correlations
+                  Opus 4.7's score correlates with a randomly chosen
+                  human reviewer at 0.26. Two human reviewer scores
+                  correlate at 0.19, comparable to the reviewer-pair
+                  correlations
                   <a href="https://academic.oup.com/rfs/article/27/9/2773/1618250" target="_blank" rel="noopener">Welch (2014)</a>
                   reports for the Journal of Finance (0.15), the Review
                   of Financial Studies (0.14), and the SFS Cavalcade
                   conference (0.20). So the best AI today is at or
                   modestly above human-reviewer level on per-paper
-                  agreement &mdash; but this parity is a recent
-                  development, with the previous-generation GPT&#8209;5.1
-                  still sitting at 0.11. However, disagreement does not
-                  necessarily mean poor review quality. The human-to-human
-                  correlation of 0.19 translates to reviewers placing 0.33
-                  weight on a shared signal &mdash; comparable to JF
-                  (0.32), RFS (0.31), and Cavalcade (0.36) in Welch (2014)
-                  &mdash; and 0.67 weight on their own idiosyncratic
-                  signal, such as taste, priors, or what they happen to
-                  find compelling. Idiosyncratic does not mean wrong. The
-                  more important question is not who agrees with whom, but
-                  whose evaluations predict the papers' future impact.
+                  agreement. However, disagreement does not necessarily
+                  mean poor review quality. The human-to-human
+                  correlation of 0.19 translates to reviewers placing
+                  roughly 0.33 weight on a common (unobserved) signal
+                  &mdash; again, comparable to JF (0.32), RFS (0.31),
+                  and Cavalcade (0.36) in Welch (2014) &mdash; and 0.67
+                  weight on their own idiosyncratic signal, such as
+                  taste, priors, or what they happen to find compelling.
+                  Idiosyncrasy does not mean wrong. The more important
+                  question is not who agrees with whom, but whose
+                  evaluations predict the papers' future impact.
                 </div>
               </li>
               <li>
@@ -125,20 +120,15 @@
                 <div class="finding-details" id="finding-3-details" hidden>
                   Among papers two reviewers rated near the top (mean
                   &le; 1.5) or near the bottom (mean &ge; 4.0), human
-                  scores predict future citations more strongly than AI
-                  scores do. The top and bottom are also the two calls
-                  that determine the conference program &mdash; which
-                  papers to put on and which to clearly reject &mdash;
-                  and human reviewers concentrate their evaluative
-                  attention accordingly. In the middle, where reviewers
-                  settle on a 2 or 3, the precise score has little
-                  bearing on the program outcome, and human scores carry
-                  essentially no signal for future citations. AI, which
-                  scores every paper with uniform attention, retains its
-                  predictive signal in the middle. The conference program
-                  is decided where humans commit, so AI's predictive
-                  advantage in the middle does not change editorial
-                  outcomes.
+                  scores predict future citations more strongly than
+                  AI scores do. Identifying the top and bottom of the
+                  distribution is important for the conference program
+                  &mdash; which papers to include and which to clearly
+                  reject &mdash; and human reviewers outperform AI in
+                  these regions. In the middle, the precise score has
+                  little bearing on the program outcome, and human
+                  scores carry essentially no signal for future
+                  citations. In this region, AI outperforms humans.
                 </div>
               </li>
               <li>
@@ -154,14 +144,10 @@
                   From November 2025 to April 2026, OpenAI released
                   GPT&#8209;5.1 &rarr; 5.4 &rarr; 5.5 and Anthropic
                   released Opus 4.5 &rarr; 4.6 &rarr; 4.7. Over those
-                  five months, the distributional distance to the human
-                  reference (the L1 distance between the two score
-                  histograms) fell by an average of 47% across the two
-                  lineages. Per-paper correlation with a single human
-                  reviewer rose from 0.11 (GPT&#8209;5.1) and 0.18 (Opus
-                  4.5) to 0.18 (GPT&#8209;5.5) and 0.26 (Opus 4.7).
-                  The frontier now matches or modestly exceeds the
-                  inter-human benchmark of 0.19. No saturation yet.
+                  five months, the distributional similarity to human
+                  reference, per-paper agreement with human reviewers,
+                  and predictability of future citations all improved
+                  significantly.
                 </div>
               </li>
             </ol>
@@ -221,14 +207,11 @@
     <!-- All three share the model picker.                            -->
     <!-- ============================================================ -->
     <section class="figures-block static-snapshot">
-      <header class="figures-block-head with-picker">
-        <div class="figures-block-head-text">
-          <p class="block-eyebrow">Findings 1&ndash;3 &middot; Where AI stands today</p>
-          <h2 class="block-title" id="drilldown-title">Look across all six models</h2>
-        </div>
+      <div class="block-eyebrow-only with-picker">
+        <p class="block-eyebrow-text" id="drilldown-title">Findings 1&ndash;3 &middot; Look across all six models</p>
         <div class="model-picker">
           <label for="model-select">Model:</label>
-          <select id="model-select">
+          <select id="model-select" class="model-select">
             <option value="all" selected>All-model average</option>
             <option value="opus-4.7">Anthropic Opus 4.7</option>
             <option value="opus-4.6">Anthropic Opus 4.6</option>
@@ -238,7 +221,7 @@
             <option value="gpt-5.1">OpenAI GPT-5.1</option>
           </select>
         </div>
-      </header>
+      </div>
       <div class="figures-row">
         <figure class="fig-chart" id="fig-1">
           <p class="fig-eyebrow">Figure 1 &middot; Finding 1</p>
@@ -265,7 +248,7 @@
         <figure class="fig-chart" id="fig-3">
           <p class="fig-eyebrow">Figure 3 &middot; Finding 3</p>
           <h3 class="fig-title">
-            Citation Prediction Coefficients by Score Region<button
+            Citation Prediction by Score Region<button
               class="info-trigger" type="button" tabindex="0"
               aria-label="What do these bars mean?"><span aria-hidden="true">?</span>
               <span class="info-tooltip" role="tooltip">
@@ -299,10 +282,21 @@
     <!-- No model picker -- the charts span all releases by design.   -->
     <!-- ============================================================ -->
     <section class="figures-block trends-over-time">
-      <header class="figures-block-head">
-        <p class="block-eyebrow">Finding 4 &middot; How AI is improving</p>
-        <h2 class="block-title">Release by release, across frontier models</h2>
-      </header>
+      <div class="block-eyebrow-only with-picker">
+        <p class="block-eyebrow-text">Finding 4 &middot; How AI is improving release by release, across frontier models</p>
+        <div class="model-picker">
+          <label for="model-select-2">Model:</label>
+          <select id="model-select-2" class="model-select">
+            <option value="all" selected>All-model average</option>
+            <option value="opus-4.7">Anthropic Opus 4.7</option>
+            <option value="opus-4.6">Anthropic Opus 4.6</option>
+            <option value="opus-4.5">Anthropic Opus 4.5</option>
+            <option value="gpt-5.5">OpenAI GPT-5.5</option>
+            <option value="gpt-5.4">OpenAI GPT-5.4</option>
+            <option value="gpt-5.1">OpenAI GPT-5.1</option>
+          </select>
+        </div>
+      </div>
       <div class="figures-row">
         <figure class="fig-chart" id="fig-4">
           <p class="fig-eyebrow">Figure 4 &middot; Trend of Figure 1</p>
@@ -331,7 +325,7 @@
         <figure class="fig-chart" id="fig-5">
           <p class="fig-eyebrow">Figure 5 &middot; Trend of Figure 2</p>
           <h3 class="fig-title">
-            Correlation between AI and Human Reviewers<button
+            AI&ndash;Human Correlation<button
               class="info-trigger" type="button" tabindex="0"
               aria-label="What is the human-to-human reference line?"><span aria-hidden="true">?</span>
               <span class="info-tooltip" role="tooltip">
@@ -349,17 +343,26 @@
           </div>
         </figure>
 
-        <figure class="fig-chart fig-placeholder" id="fig-6">
+        <figure class="fig-chart" id="fig-6">
           <p class="fig-eyebrow">Figure 6 &middot; Trend of Figure 3</p>
           <h3 class="fig-title">
-            Predictive Validity over Model Releases
-            <span class="fig-subtitle">A time trend of |&beta;<sub>AI</sub>| / |&beta;<sub>H</sub>| in each score region</span>
+            AI&ndash;Human Predictive Power<button
+              class="info-trigger" type="button" tabindex="0"
+              aria-label="What does this chart show?"><span aria-hidden="true">?</span>
+              <span class="info-tooltip" role="tooltip">
+                |&beta;<sub>H</sub>| / |&beta;<sub>AI</sub>| from the
+                Poisson PML citation regression, on a log scale. Solid
+                = top tail (mean human score &le; 1.5), where humans
+                dominate (ratio &gt; 1). Dashed = middle (1.5 &lt; mean
+                &lt; 4.0), where AI dominates (ratio &lt; 1). The
+                dashed gray line at 1 = parity. The trend on both
+                sides moves in AI&rsquo;s direction: top-tail human
+                edge shrinks toward 1; middle AI edge deepens.
+              </span>
+            </button>
           </h3>
-          <div class="fig-canvas">
-            <span class="fig-label">In development</span>
-            <span class="fig-coming">
-              Coming with the next frontier-model release.
-            </span>
+          <div class="chart-container">
+            <canvas id="chart-pred"></canvas>
           </div>
         </figure>
       </div>
@@ -380,5 +383,6 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="charts.js"></script>
+  <script src="tooltips.js"></script>
 </body>
 </html>
