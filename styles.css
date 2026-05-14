@@ -322,8 +322,18 @@ h1 {
   background: var(--rule);
 }
 
-/* ---------- (Unused — kept for easy revert) Models horizontal strip
-   ---------- */
+/* =========================================================================
+   DEAD CODE — DO NOT USE
+   The classes below (.models-strip, .models-strip-label, .models-chips)
+   styled an earlier "horizontal models strip" layout that we replaced
+   with the sticky sidebar (.figures-sidebar / .models-side-list,
+   above). Nothing in index.html references them today.
+
+   Kept here, in the file, so a future fall-back to the strip layout
+   can revive them by reattaching the HTML — without having to dig
+   through git history. If you confirm we're never going back, this
+   block is safe to delete in one go.
+   ========================================================================= */
 .models-strip {
   display: flex;
   align-items: flex-start;
@@ -558,9 +568,21 @@ h3 {
   margin-top: 1.5rem;
 }
 
+/* =========================================================================
+   DEAD CODE — DO NOT USE  (.figures-block-head and descendants)
+   The original section heads carried a big serif title plus a small
+   eyebrow above. We moved to a single-line .block-eyebrow-only row
+   (defined just below). Nothing in index.html uses .figures-block-head
+   or its .block-title today.
+
+   Kept in this file so a future "give sections a real title back" can
+   re-attach the HTML without rediscovering the styling. Safe to delete
+   if we commit to the eyebrow-only design.
+   ========================================================================= */
 .figures-block-head {
   margin-bottom: 1.4rem;
 }
+/* === END DEAD CODE === */
 
 /* Compact one-line label used in both figure blocks. With the
    .with-picker modifier, the label sits on the left and the model
@@ -601,6 +623,7 @@ h3 {
   /* Inherits font-family / size / case from the parent .block-eyebrow-only */
 }
 
+/* (continued DEAD CODE for .figures-block-head — see note above) */
 .figures-block-head.with-picker {
   display: flex;
   align-items: flex-end;
@@ -630,6 +653,7 @@ h3 {
   text-transform: none;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
 }
+/* === END DEAD CODE === */
 
 .figures-row {
   display: grid;
@@ -637,13 +661,18 @@ h3 {
   gap: 2rem;
 }
 
-/* Legacy single-figure-per-row helper, kept for any future use where
-   one chart should sit centered at the width of a single column from
-   the three-figure grid. Not used in the current layout. */
+/* =========================================================================
+   DEAD CODE — DO NOT USE  (.figures-row-single)
+   Single-figure-per-row helper for the case where one chart should sit
+   centered at the width of one column from the three-figure grid. Not
+   used anywhere in index.html today. Kept as a ready-to-use override
+   in case a future layout brings a solo figure back.
+   ========================================================================= */
 .figures-row-single {
   grid-template-columns: minmax(0, calc(33.333% - 1.333rem));
   justify-content: center;
 }
+/* === END DEAD CODE === */
 
 /* ---------- Model picker (dropdown) ---------- */
 .model-picker {
@@ -880,6 +909,10 @@ h3 {
   display: inline;
 }
 
+/* .fig-placeholder is DEAD (see banner before .fig-canvas below).
+   .fig-chart is live. Kept together here only because both want the
+   same `margin: 0` reset. Removing .fig-placeholder from the selector
+   is safe; leaving it costs nothing. */
 .fig-placeholder,
 .fig-chart {
   margin: 0;
@@ -1010,6 +1043,21 @@ h3 {
   font-style: normal;
 }
 
+/* =========================================================================
+   DEAD CODE — DO NOT USE  (.fig-canvas / .fig-label / .fig-coming /
+   .fig-placeholder figcaption)
+   These styled the diagonal-striped "figure coming soon" placeholder
+   blocks we used before every chart was implemented. All six figures
+   render real Chart.js canvases today, so the placeholder pattern is
+   gone from index.html.
+
+   Kept in this file so that if a future figure is added before its
+   data is ready, we can drop in a <figure class="fig-placeholder">
+   …  <div class="fig-canvas"><span class="fig-label">FIGURE 7</span>
+   <span class="fig-coming">coming soon</span></div>
+   <figcaption>…</figcaption></figure>
+   and get the striped placeholder back instantly.
+   ========================================================================= */
 .fig-canvas {
   position: relative;
   aspect-ratio: 10 / 7;
@@ -1057,6 +1105,7 @@ h3 {
   color: var(--muted);
   line-height: 1.4;
 }
+/* === END DEAD CODE === */
 
 /* ---------- Links ---------- */
 a {
@@ -1115,19 +1164,22 @@ a:hover {
     grid-column: auto;
     width: auto;
   }
+  /* DEAD: .figures-block-head — see banner above where it's defined. */
   .figures-block-head.with-picker {
     flex-direction: column;
     align-items: flex-start;
   }
 }
 
-/* On phone, stack models-strip label above the chips. */
 @media (max-width: 640px) {
   html { font-size: 16px; }
   .page { padding: 2rem 1.2rem 2rem; border: none; }
   h1 { font-size: 1.9rem; }
   .findings .entry.latest { padding-left: 0.9rem; }
   .findings ol li { padding-left: 1.9rem; }
+  /* DEAD: .figures-block-head / .models-strip / .models-chips — see
+     banners above. Kept here so a future revert to the old layouts
+     still gets correct mobile rules. */
   .figures-block-head .block-title { font-size: 1.2rem; }
   .models-strip {
     flex-direction: column;
@@ -1137,4 +1189,39 @@ a:hover {
   .models-chips {
     gap: 1rem 1.4rem;
   }
+}
+
+/* ---------- Print ---------- */
+/* Optimize for the rare case where someone hits ⌘P to share the page
+   in PDF form. Force a single column, drop interactive chrome
+   (skip-link, toggles, info "?" buttons), expand the collapsed
+   finding details so the printout carries the full story, and switch
+   to a plain white background to save toner. */
+@media print {
+  body { background: #ffffff; color: #000; }
+  .page {
+    max-width: none;
+    border: none;
+    padding: 0;
+    background: #ffffff;
+  }
+  .skip-link,
+  .finding-toggle,
+  .info-trigger,
+  .region-toggle-group,
+  .model-picker,
+  .figures-sidebar {
+    display: none !important;
+  }
+  /* The findings details are hidden by default; expand them so the
+     printed copy carries the prose, not just the headlines. */
+  .finding-details[hidden] { display: block !important; }
+  .lede-findings-grid,
+  .figures-grid,
+  .figures-row {
+    display: block;
+  }
+  .figures-row > * + * { margin-top: 1.5rem; }
+  .fig-chart { break-inside: avoid; }
+  /* Inline link colors / underlines read fine; do nothing on those. */
 }
