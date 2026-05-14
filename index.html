@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Can AI Replace the Peer Reviewer?</title>
   <meta name="description" content="A living research project comparing each new generation of frontier AI to human peer reviewers, using submissions to the Utah Winter Finance Conference.">
+  <meta name="author" content="Avner Kalay, James Schallheim, Da Huang">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#fafafa">
   <link rel="canonical" href="https://canaireview.com/">
 
   <!-- Favicon -->
@@ -18,10 +21,16 @@
   <meta property="og:image" content="https://canaireview.com/og.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
+  <meta property="og:locale" content="en_US">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Can AI Replace the Peer Reviewer?">
   <meta name="twitter:description" content="A living comparison of frontier AI vs. human peer review.">
   <meta name="twitter:image" content="https://canaireview.com/og.png">
+
+  <!-- Warm up the CDN connection before the deferred scripts request
+       Chart.js and the date-fns adapter, shaving the TLS handshake off
+       the critical path. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 
   <link rel="stylesheet" href="styles.css">
 

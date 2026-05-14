@@ -108,7 +108,22 @@
   function attach() {
     document.querySelectorAll(SELECTOR).forEach(function (host) {
       host.addEventListener("mouseenter", function (e) { position(host, e); });
-      host.addEventListener("mousemove",  function (e) { position(host, e); });
+      // Throttle mousemove repositioning to one paint frame. position()
+      // measures the trigger and the tooltip on every call, so running
+      // it at the cursor's full event rate is wasted work — the user
+      // can't see updates faster than the next paint anyway. Storing
+      // the latest event ensures we reposition off the most recent
+      // pointer location, not the first one we observed in the frame.
+      let moveRaf = null;
+      let lastMove = null;
+      host.addEventListener("mousemove", function (e) {
+        lastMove = e;
+        if (moveRaf !== null) return;
+        moveRaf = requestAnimationFrame(function () {
+          moveRaf = null;
+          position(host, lastMove);
+        });
+      });
       host.addEventListener("focusin",    function ()  { position(host); });
       host.addEventListener("mouseleave", function () {
         const tip = getTip(host);
