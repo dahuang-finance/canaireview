@@ -894,6 +894,49 @@ h3 {
   border: none;
 }
 
+/* Region picker (Fig 6) — a compact pill-toggle group sitting under
+   the figure title. Tight padding / margins so it eats minimal
+   vertical space. Active state inverts to dark fill, matching the
+   sidebar model picker's "locked" state for visual consistency. */
+.region-toggle-group {
+  display: flex;
+  justify-content: center;
+  gap: 0.25rem;
+  margin: 0.1rem 0 0.35rem;
+}
+
+.region-toggle {
+  background: transparent;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.6rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background-color 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.region-toggle:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.region-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.region-toggle.is-active,
+.region-toggle.is-active:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+}
+
 /* Fig 2 (scatter) carries both a y- and x-axis title plus a top legend
    and a bottom-right OLS annotation, so it gets the biggest bump:
    5/4 (~80% of width). Fig 3 has only a y-axis title — slightly less

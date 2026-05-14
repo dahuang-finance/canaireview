@@ -295,6 +295,7 @@
                 score s.
               </span>
             </button>
+            <span class="fig-subtitle">Lower = closer to humans</span>
           </h3>
           <div class="chart-container">
             <canvas id="chart-l1"></canvas>
@@ -310,12 +311,12 @@
               <span class="info-tooltip" role="tooltip">
                 Correlation between the AI's score for each paper and a
                 randomly chosen human reviewer's score on the same paper.
-                The dashed line at 0.19 is the human-to-human correlation
-                &mdash; how strongly two human reviewers' scores on the
-                same paper correlate with each other. Shaded bands show
-                95% bootstrap confidence intervals.
+                The dashed line at 0.19 is the human-to-human correlation.
+                Whiskers and the shaded band are 95% bootstrap confidence
+                intervals.
               </span>
             </button>
+            <span class="fig-subtitle">Higher = closer to humans</span>
           </h3>
           <div class="chart-container">
             <canvas id="chart-corr"></canvas>
@@ -325,21 +326,22 @@
         <figure class="fig-chart" id="fig-6">
           <p class="fig-eyebrow">Figure 6 &middot; Trend of Figure 3</p>
           <h3 class="fig-title">
-            AI&ndash;Human Predictive Power<button
+            AI / Human Predictive Power<button
               class="info-trigger" type="button" tabindex="0"
               aria-label="What does this chart show?"><span aria-hidden="true">?</span>
               <span class="info-tooltip" role="tooltip">
-                |&beta;<sub>H</sub>| / |&beta;<sub>AI</sub>| from the
-                Poisson PML citation regression, on a log scale. Solid
-                = top tail (mean human score &le; 1.5), where humans
-                dominate (ratio &gt; 1). Dashed = middle (1.5 &lt; mean
-                &lt; 4.0), where AI dominates (ratio &lt; 1). The
-                dashed gray line at 1 = parity. The trend on both
-                sides moves in AI&rsquo;s direction: top-tail human
-                edge shrinks toward 1; middle AI edge deepens.
+                |&beta;<sub>AI</sub>| / |&beta;<sub>H</sub>| from
+                Figure 3's per-region Poisson regression, on a log
+                scale. AI (humans) predicts future citations better
+                when this ratio is greater (smaller) than 1.
               </span>
             </button>
           </h3>
+          <div class="region-toggle-group" role="tablist" aria-label="Score region">
+            <button class="region-toggle" type="button" role="tab" data-region="top">Top tail</button>
+            <button class="region-toggle is-active" type="button" role="tab" data-region="mid">Middle</button>
+            <button class="region-toggle" type="button" role="tab" data-region="bot">Bottom tail</button>
+          </div>
           <div class="chart-container">
             <canvas id="chart-pred"></canvas>
           </div>

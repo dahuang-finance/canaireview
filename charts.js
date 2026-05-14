@@ -27,18 +27,45 @@
 // dominates middle). Plotting both on a log scale makes the symmetry
 // visible: as AI improves, top decreases toward 1 from above and
 // middle decreases away from 1 below.
+// pred_top / pred_mid / pred_bot are |β_AI| / |β_H| — the AI score's
+// Poisson coefficient over the human score's, in that region. Higher
+// = AI predicts citations better than humans (above 1 = AI dominant;
+// below 1 = humans dominant).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 4.03, pred_mid: 0.261 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 2.30, pred_mid: 0.238 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291, pred_top: 1.33, pred_mid: 0.097 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 0.248, pred_mid: 3.831, pred_bot: 0.561 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 0.434, pred_mid: 4.197, pred_bot: 0.470 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291, pred_top: 0.754, pred_mid: 10.260, pred_bot: 0.319 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 3.00, pred_mid: 0.714 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196, pred_top: 28.36, pred_mid: 0.398 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209, pred_top: 4.65, pred_mid: 0.105 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 0.334, pred_mid: 1.402, pred_bot: 0.525 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196, pred_top: 0.035, pred_mid: 2.511, pred_bot: 0.966 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209, pred_top: 0.215, pred_mid: 9.481, pred_bot: 0.409 },
   ],
 };
+
+// Active score region for Fig 6 (predictive-edge chart). Declared up
+// here so the chart's legend.generateLabels callback can reference it.
+// Middle is the default because it shows the cleanest "AI improving"
+// signal (large rise above parity), while top and bottom regions are
+// noisier or counter-trending.
+let currentPredRegion = "mid";
+
+// Field name in TREND_DATA for a region's pre-computed ratio.
+function predMetric(region) {
+  return region === "top" ? "pred_top"
+       : region === "mid" ? "pred_mid"
+       : "pred_bot";
+}
+
+// Build the data array for one vendor's line in one region. Same x's
+// across all regions (the model release dates don't change), only the
+// y-values move — which is what makes the region-switch animation
+// look like the lines sliding vertically.
+function predDataFor(vendor, region) {
+  const metric = predMetric(region);
+  return TREND_DATA[vendor].map((m) => ({ x: m.date, y: m[metric] }));
+}
 
 // Human-to-human Pearson r reference line for the correlation chart.
 // 0.189 = correlation between two random human reviewers on the same
@@ -196,9 +223,101 @@ const SHAPE_SCALE = {
   opus: 1.0,
   gpt:  1.3,
 };
+
+// Pre-render legend markers as SVG-backed Image elements at matched
+// visible sizes. Chart.js's default usePointStyle legend computes the
+// marker radius from `boxWidth` and then draws circles at diameter =
+// 2·radius but rects at side = √2·radius (~71% of the circle's
+// diameter), so at the same boxWidth a circle renders noticeably
+// larger than a rect. There's no per-item radius override in the
+// legend API, but when the pointStyle is an Image / Canvas, Chart.js
+// bypasses that math entirely and draws the image at its natural
+// width × height. SVG (rather than canvas) keeps the markers crisp on
+// HiDPI displays.
+function makeLegendMarker(shape, color) {
+  const size = 11;
+  const stroke = 1.4;
+  let body;
+  if (shape === "circle") {
+    body = `<circle cx="${size/2}" cy="${size/2}" r="${(size-stroke)/2}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
+  } else {
+    const inset = stroke / 2;
+    body = `<rect x="${inset}" y="${inset}" width="${size-stroke}" height="${size-stroke}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
+  }
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">${body}</svg>`;
+  const img = new Image(size, size);
+  img.src = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+  return img;
+}
+
+const OPUS_LEGEND_MARKER = makeLegendMarker("circle", COLORS.opus);
+const GPT_LEGEND_MARKER  = makeLegendMarker("rect",   COLORS.gpt);
 const BASE_RADIUS  = 6;
 const HIGH_RADIUS  = 10;
 const HOVER_RADIUS = 9;
+
+// ---------- Responsive sizing for markers / lines ----------
+// Scriptable Chart.js options (functions that receive a context with
+// ctx.chart.width) re-evaluate on every render — including on resize
+// — so marker radii and line widths shrink/grow with the chart's
+// actual rendered width instead of being pinned to one set of pixel
+// values that look correct at one width and chunky at others.
+function responsiveBaseRadius(chartWidth) {
+  // Linear scale clamped: ~2.5 at 250 px, ~3.5 at 380 px, ~5 at 600 px.
+  return Math.max(2.4, Math.min(5.0, chartWidth * 0.0078));
+}
+function responsiveLineWidth(chartWidth) {
+  // ~1.3 at 250 px, ~1.7 at 380 px, ~2.1 at 600 px.
+  return Math.max(1.2, Math.min(2.2, chartWidth * 0.0035 + 0.5));
+}
+
+// Helpers for the dataset-tagged __vendor key. Datasets in
+// buildLineChart and predDataset stash their vendor here so the
+// scriptable functions below can identify the series at render time.
+function ctxVendor(ctx) {
+  return ctx && ctx.dataset && ctx.dataset.__vendor;
+}
+function ctxIsFocus(ctx) {
+  const vendor = ctxVendor(ctx);
+  if (!vendor) return false;
+  const m = TREND_DATA[vendor][ctx.dataIndex];
+  if (!m) return false;
+  return isFocus(vendor, m, currentSelection);
+}
+
+// Scriptable point properties — each reads chart width + current
+// selection state and returns a per-point value.
+function scriptablePointRadius(ctx) {
+  const vendor = ctxVendor(ctx);
+  if (!vendor) return 0;
+  const base = responsiveBaseRadius(ctx.chart.width) * SHAPE_SCALE[vendor];
+  return ctxIsFocus(ctx) ? base * 1.6 : base;
+}
+function scriptablePointHoverRadius(ctx) {
+  // Hover lands at the same visual size as a focused (selected) point
+  // so the rendered marker grows on hover without ever shrinking
+  // below an already-focused point's size.
+  return scriptablePointRadius(ctx) * 1.05;
+}
+function scriptablePointBorderWidth(ctx) {
+  if (ctxIsFocus(ctx)) return 0;
+  // Outline scales with marker radius so the proportion stays right.
+  return Math.max(1, responsiveBaseRadius(ctx.chart.width) * 0.32);
+}
+function scriptablePointBackgroundColor(ctx) {
+  const vendor = ctxVendor(ctx);
+  if (!vendor) return "#fff";
+  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  return ctxIsFocus(ctx) ? base : "#fff";
+}
+function scriptablePointBorderColor(ctx) {
+  const vendor = ctxVendor(ctx);
+  if (!vendor) return "#888";
+  return vendor === "opus" ? COLORS.opus : COLORS.gpt;
+}
+function scriptableLineBorderWidth(ctx) {
+  return responsiveLineWidth(ctx.chart.width);
+}
 
 Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
 Chart.defaults.font.size = 12;
@@ -208,15 +327,18 @@ if (window["chartjs-plugin-annotation"]) {
   Chart.register(window["chartjs-plugin-annotation"]);
 }
 
-// Default point look: outlined (white fill, colored border).
-// Highlight (per-point) overrides via the `pointBackgroundColor` /
-// `pointBorderColor` arrays set in applyHighlight().
+// Default point look: outlined (white fill, colored border) for
+// unfocused points; vendor-color fill, no outline, larger radius for
+// the focused/selected point. All sizes scale with chart width via
+// the scriptable functions above so the markers + line shrink with
+// the figure when the viewport narrows.
 const POINT_BASE = {
-  pointRadius: 6,
-  pointHoverRadius: 9,
-  pointBorderWidth: 2.4,
-  pointBackgroundColor: "#fff",
-  borderWidth: 2.8,
+  pointRadius: scriptablePointRadius,
+  pointHoverRadius: scriptablePointHoverRadius,
+  pointBorderWidth: scriptablePointBorderWidth,
+  pointBorderColor: scriptablePointBorderColor,
+  pointBackgroundColor: scriptablePointBackgroundColor,
+  borderWidth: scriptableLineBorderWidth,
   tension: 0.22,    // gentle bezier-like curve between releases
 };
 
@@ -301,18 +423,34 @@ function makeYAxisConfig({ min, max, topLabel, bottomLabel, tickDecimals = 0 }) 
 const Y_CFG_L1 = makeYAxisConfig({
   min: 0,
   max: 2,
-  topLabel: "completely different from humans",
-  bottomLabel: "identical to humans",
+  // Interpretation cue ("lower = closer to humans") lives in the
+  // figure subtitle in the HTML instead of as floating in-chart
+  // corner labels — same content, but framing the chart rather than
+  // decorating it.
+  topLabel: "",
+  bottomLabel: "",
   tickDecimals: 0,
 });
 
+// For Fig 5, we use conventional ticks on the y-axis (0, 0.1, ..., 0.4)
+// and surface the two reference values — human-to-human correlation
+// (0.189) and theoretical max correlation (0.435) — as dashed
+// reference lines with labels, rather than as a single non-round
+// max tick. Both corner labels are dropped.
 const Y_CFG_CORR = makeYAxisConfig({
   min: 0,
-  max: R_THEORETICAL_MAX,
-  topLabel: "theoretical maximum (see paper)",
-  bottomLabel: "no agreement",
-  tickDecimals: 3,
+  // A hair past R_THEORETICAL_MAX (~0.435) so the dashed theoretical-
+  // max reference line has breathing room and isn't pinned to the
+  // top edge of the plot.
+  max: 0.48,
+  topLabel: "",
+  bottomLabel: "",
+  tickDecimals: 1,
 });
+Y_CFG_CORR.axis.afterBuildTicks = function (scale) {
+  scale.ticks = [0, 0.1, 0.2, 0.3, 0.4].map((v) => ({ value: v }));
+};
+Y_CFG_CORR.axis.ticks.callback = (v) => v.toFixed(1);
 
 // Predictive-edge chart (Figure 6). Y is the ratio |β_H| / |β_AI| in
 // the TOP TAIL score region (mean ≤ 1.5) on a LOG scale, which is
@@ -323,10 +461,12 @@ const Y_CFG_CORR = makeYAxisConfig({
 const Y_CFG_PRED = {
   axis: {
     type: "logarithmic",
-    // Range chosen to fit both regions on one chart:
-    //   top-tail ratios live in ~1 to ~30
-    //   middle  ratios live in ~0.1 to ~1
-    min: 0.05, max: 50,
+    // Ratio is |β_AI|/|β_H|: above 1 = AI dominant, below 1 = humans
+    // dominant. Range covers all regions: middle values reach ~10
+    // (AI strongly dominant in middle), top tail values reach ~0.03
+    // (humans strongly dominant on the very best papers — gpt-5.4 is
+    // the extreme low end at 0.035).
+    min: 0.02, max: 50,
     afterFit: (scale) => { scale.width = 44; },
     afterBuildTicks: (scale) => {
       scale.ticks = [
@@ -350,8 +490,8 @@ const Y_CFG_PRED = {
     border: { color: "#bbb" },
   },
   corner: {
-    topLabel: "humans predict citations better",
-    bottomLabel: "AI predicts citations better",
+    topLabel: "AI predicts citations better",
+    bottomLabel: "humans predict citations better",
   },
 };
 
@@ -592,48 +732,88 @@ function colorWithAlpha(hex, alpha) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-// Plugin: draws per-marker error bars (whiskers) instead of a continuous
-// band. A band misleadingly implies the CI is a continuous function of
-// time, but we only have CIs at discrete release points. Whiskers at each
-// marker spanning [lo, hi] are the honest representation.
-//
-// Stroke alpha is multiplied by the per-vendor whisker opacity from
-// whiskerOpacityState, so fading the line via the legend smoothly fades
-// the whiskers on the exact same 600ms curve (driven by fadeWhiskers).
+// Parse the alpha out of a color string. Hex / plain rgb → 1 (fully
+// opaque). `transparent` → 0. `rgba(...)` → the parsed alpha. Used by
+// the errorBars plugin to sync whisker opacity to the line's
+// current animated alpha during show/hide transitions.
+function parseColorAlpha(color) {
+  if (typeof color !== "string") return 1;
+  if (color === "transparent") return 0;
+  const match = color.match(/rgba\(\s*[\d.]+\s*,\s*[\d.]+\s*,\s*[\d.]+\s*,\s*([\d.]+)\s*\)/);
+  if (match) return Math.max(0, Math.min(1, parseFloat(match[1])));
+  return 1;
+}
+
+// Plugin: draws per-marker uncertainty whiskers — a thin vertical line
+// at each release point spanning [lo, hi]. Honest about CI being
+// measured only at discrete release dates (vs. a continuous band that
+// silently interpolates between them). No horizontal caps — modern
+// editorial style: the endpoints are where the line stops, no extra
+// ink needed to mark them. Stroke width scales with chart width via
+// responsiveLineWidth so the whiskers don't look chunky on narrow
+// figures. Visibility tracks the main vendor dataset: when the legend
+// hides the line, the whiskers vanish too.
 const errorBarsPlugin = {
   id: "errorBars",
   afterDatasetsDraw(chart) {
     const cfg = chart.options.plugins.errorBars;
     if (!cfg || !cfg.series) return;
-    const xScale = chart.scales.x;
     const yScale = chart.scales.y;
     const ctx = chart.ctx;
+    const lineW = Math.max(1.0, responsiveLineWidth(chart.width) * 0.7);
     cfg.series.forEach(({ points, color, mainDatasetIndex }) => {
-      const opacity = mainDatasetIndex !== undefined
-        ? getWhiskerOpacity(chart, mainDatasetIndex)
-        : 1.0;
-      if (opacity <= 0.001) return;
+      if (mainDatasetIndex === undefined) return;
+      // Read the marker's pixel position from Chart.js's resolved
+      // metadata — using point.x directly avoids the 1-2 px drift
+      // we'd otherwise get from re-parsing the date string via
+      // `new Date(...)` (browser parses ISO dates as UTC, Chart.js
+      // resolves them differently, and the diff is ~0.5 px at this
+      // chart width).
+      const meta = chart.getDatasetMeta(mainDatasetIndex);
+      // Sync whisker opacity to a hand-driven fade that's started in
+      // lockstep with chart.show/hide from the legend onClick handler
+      // (via fadeWhiskers). Tried reading the animated alpha out of
+      // meta.dataset.options.borderColor directly, but Chart.js's
+      // animation engine doesn't always mutate that string on every
+      // frame — so the manual fade is more reliable.
+      const opacity = getWhiskerOpacity(chart, mainDatasetIndex);
+      if (opacity < 0.005) return;
       ctx.save();
-      ctx.strokeStyle = colorWithAlpha(color, opacity);
-      ctx.lineWidth = 1.4;
+      ctx.globalAlpha = opacity;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = lineW;
       ctx.lineCap = "round";
-      const cap = 4;
-      points.forEach((p) => {
-        const x = xScale.getPixelForValue(new Date(p.x).getTime());
+      points.forEach((p, idx) => {
+        const point = meta.data[idx];
+        if (!point) return;
+        const x = point.x;
+        const yMarker = point.y;
+        const radius = (point.options && point.options.radius) || 0;
+        const pointStyle = (point.options && point.options.pointStyle) || "circle";
+        // Visual half-height of the marker in pixels: a "circle" of
+        // radius R spans 2R vertically; a "rect" of radius R spans
+        // sqrt(2)·R per side (Chart.js draws rects at side =
+        // SQRT1_2 · 2R, so the half-height is R · SQRT1_2).
+        const halfH = pointStyle === "rect" ? radius * Math.SQRT1_2 : radius;
         const yLo = yScale.getPixelForValue(p.lo);
         const yHi = yScale.getPixelForValue(p.hi);
-        ctx.beginPath();
-        ctx.moveTo(x, yLo);
-        ctx.lineTo(x, yHi);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x - cap, yHi);
-        ctx.lineTo(x + cap, yHi);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x - cap, yLo);
-        ctx.lineTo(x + cap, yLo);
-        ctx.stroke();
+        // Draw the whisker as two segments that stop at the marker's
+        // top/bottom edges instead of one line passing through the
+        // marker. Cleaner than relying on the marker's white fill to
+        // mask the middle, and works correctly regardless of marker
+        // shape or fill state.
+        if (yHi < yMarker - halfH) {
+          ctx.beginPath();
+          ctx.moveTo(x, yHi);
+          ctx.lineTo(x, yMarker - halfH);
+          ctx.stroke();
+        }
+        if (yLo > yMarker + halfH) {
+          ctx.beginPath();
+          ctx.moveTo(x, yMarker + halfH);
+          ctx.lineTo(x, yLo);
+          ctx.stroke();
+        }
       });
       ctx.restore();
     });
@@ -687,15 +867,24 @@ function tooltipCallbacks(metricLabel) {
       if (r && r.isRef) return "Human-to-human correlation";
       return r && r.name ? r.name : "";
     },
+    // Returning an array breaks the tooltip across multiple lines —
+    // a single concatenated string was running off the right edge of
+    // the chart on narrow viewports.
     label: (item) => {
       const r = item.raw;
       if (r.isRef) {
-        return `${metricLabel} = ${r.y.toFixed(3)}  (95% CI [${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}])`;
+        return [
+          `${metricLabel} = ${r.y.toFixed(3)}`,
+          `95% CI [${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}]`,
+        ];
       }
       if (r.ciLo !== undefined && r.ciHi !== undefined) {
-        return `${metricLabel} = ${r.y.toFixed(3)}  [95% CI ${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}]  (released ${fmtDate(r.x)})`;
+        return [
+          `${metricLabel} = ${r.y.toFixed(3)} (released ${fmtDate(r.x)})`,
+          `95% CI [${r.ciLo.toFixed(3)}, ${r.ciHi.toFixed(3)}]`,
+        ];
       }
-      return `${metricLabel} = ${r.y.toFixed(3)}  (released ${fmtDate(r.x)})`;
+      return `${metricLabel} = ${r.y.toFixed(3)} (released ${fmtDate(r.x)})`;
     },
   };
 }
@@ -930,6 +1119,9 @@ function lockedLegendOnClick(e, legendItem, legend) {
   if (willBeVisible) chart.show(idx);
   else chart.hide(idx);
   legendItem.hidden = !willBeVisible;
+  // Drive a parallel whisker-opacity fade on the same easeOutCubic
+  // curve and duration as Chart.js's show/hide, so the whiskers
+  // disappear/reappear smoothly together with the line + markers.
   if (idx === 0 || idx === 1) {
     fadeWhiskers(chart, idx, willBeVisible);
   }
@@ -949,18 +1141,18 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
           data: pointsFor("opus", metric),
           borderColor: COLORS.opus,
           pointStyle: SHAPES.opus,
+          __vendor: "opus",
           ...POINT_BASE,
-          pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE.opus,
-          order: 2,
+          order: 3,
         },
         {
           label: "OpenAI GPT",
           data: pointsFor("gpt", metric),
           borderColor: COLORS.gpt,
           pointStyle: SHAPES.gpt,
+          __vendor: "gpt",
           ...POINT_BASE,
-          pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE.gpt,
-          order: 2,
+          order: 3,
         },
       ],
     },
@@ -980,17 +1172,21 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
             usePointStyle: true,
             boxWidth: 8, boxHeight: 8, padding: 14,
             font: { size: 11 }, color: "#333",
-            // Hide datasets whose label starts with "_" (CI band fills
-            // drawn at order=0) AND the human-to-human reference
-            // line, which is now labeled directly on the chart in
-            // Tufte style instead of via a legend entry.
-            filter: (item) => !item.text.startsWith("_") &&
-                              !item.text.startsWith("Human-to-human"),
-            // Pin legend display order to dataset-array order. Without
-            // this, Chart.js sorts legend items by dataset.order which
-            // we use for z-depth, so the visible legend can disagree
-            // with what a reader expects and clicks on the wrong thing.
-            sort: (a, b) => a.datasetIndex - b.datasetIndex,
+            // Custom legend items so the circle (Opus) and square (GPT)
+            // markers render at matched visual sizes — Chart.js's
+            // default usePointStyle math makes circles ~40% larger
+            // than rects at the same boxWidth. Using image-based
+            // pointStyle bypasses that math.
+            generateLabels: (chart) => [
+              { text: "Anthropic Opus",
+                pointStyle: OPUS_LEGEND_MARKER,
+                hidden: !chart.isDatasetVisible(0),
+                datasetIndex: 0 },
+              { text: "OpenAI GPT",
+                pointStyle: GPT_LEGEND_MARKER,
+                hidden: !chart.isDatasetVisible(1),
+                datasetIndex: 1 },
+            ],
           },
         },
         tooltip: {
@@ -1018,20 +1214,19 @@ const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
 // 2-vendor template. Build it explicitly.
 function predDataset(vendor, region) {
   const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
-  const metric = region === "top" ? "pred_top" : "pred_mid";
-  const isSolid = region === "top";
   return {
-    label: `${vendor === "opus" ? "Opus" : "GPT"} · ${region === "top" ? "top tail" : "middle"}`,
-    data: TREND_DATA[vendor].map((m) => ({ x: m.date, y: m[metric] })),
+    label: vendor === "opus" ? "Anthropic Opus" : "OpenAI GPT",
+    data: predDataFor(vendor, region),
     borderColor: base,
-    borderDash: isSolid ? [] : [3, 3],
+    borderDash: [],
     pointStyle: SHAPES[vendor],
-    pointRadius: BASE_RADIUS * SHAPE_SCALE[vendor],
-    pointHoverRadius: HOVER_RADIUS * SHAPE_SCALE[vendor],
-    pointBorderWidth: 2.4,
-    pointBackgroundColor: "#fff",
-    pointBorderColor: base,
-    borderWidth: 2.4,
+    __vendor: vendor,
+    pointRadius: scriptablePointRadius,
+    pointHoverRadius: scriptablePointHoverRadius,
+    pointBorderWidth: scriptablePointBorderWidth,
+    pointBorderColor: scriptablePointBorderColor,
+    pointBackgroundColor: scriptablePointBackgroundColor,
+    borderWidth: scriptableLineBorderWidth,
     tension: 0.22,
     order: 2,
   };
@@ -1040,11 +1235,13 @@ function predDataset(vendor, region) {
 const chartPred = new Chart(document.getElementById("chart-pred"), {
   type: "line",
   data: {
+    // Just one line per vendor; the region picker swaps the dataset's
+    // .data on click and Chart.js animates the y-values from old to
+    // new, producing a "slide" between regions instead of fading
+    // separate datasets in/out.
     datasets: [
-      predDataset("opus", "top"),
-      predDataset("gpt",  "top"),
-      predDataset("opus", "mid"),
-      predDataset("gpt",  "mid"),
+      predDataset("opus", currentPredRegion),  // index 0
+      predDataset("gpt",  currentPredRegion),  // index 1
     ],
   },
   options: {
@@ -1058,42 +1255,41 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
         position: "top", align: "end",
         labels: {
           usePointStyle: true,
-          boxWidth: 14, boxHeight: 10, padding: 14,
+          // Match the Fig 4/5 legend dimensions so the marker swatch
+          // sizes are visually consistent across the trend row. Equal
+          // boxWidth/boxHeight keeps the circle (Opus) and square
+          // (GPT) at the same rendered size — previously 14×10 made
+          // the square wider than the circle.
+          boxWidth: 8, boxHeight: 8, padding: 14,
           font: { size: 11 }, color: "#333",
           // Compact 2-item vendor legend. The region (top tail vs
-          // middle) is communicated in-chart via direct labels and
-          // line style (solid vs dashed), not via the legend.
-          // `hidden` is computed from current visibility so the
-          // legend item gets the strikethrough state when toggled.
+          // middle) is no longer encoded here — the picker under the
+          // title controls which region is shown.
           generateLabels: (chart) => [
-            { text: "Anthropic Opus", fillStyle: "transparent",
-              strokeStyle: COLORS.opus, lineWidth: 2.4,
-              pointStyle: SHAPES.opus,
+            { text: "Anthropic Opus",
+              pointStyle: OPUS_LEGEND_MARKER,
               hidden: !chart.isDatasetVisible(0),
               datasetIndex: 0 },
-            { text: "OpenAI GPT", fillStyle: "transparent",
-              strokeStyle: COLORS.gpt, lineWidth: 2.4,
-              pointStyle: SHAPES.gpt,
+            { text: "OpenAI GPT",
+              pointStyle: GPT_LEGEND_MARKER,
               hidden: !chart.isDatasetVisible(1),
               datasetIndex: 1 },
           ],
         },
-        // Click on a vendor toggles BOTH datasets for that vendor
-        // (top-tail dataset at index v, middle dataset at index v+2).
-        // Vendor-lock: if the model picker has selected this vendor,
-        // refuse to hide it.
+        // Vendor-lock: if the model picker has that vendor selected,
+        // refuse to hide it via the legend. Use chart.show()/hide()
+        // (not setDatasetVisibility) so the line + markers fade over
+        // the chart's 600 ms easeOutCubic animation curve instead of
+        // snapping in or out.
         onClick: (e, legendItem, legend) => {
           const chart = legend.chart;
-          const vendorIdx = legendItem.datasetIndex; // 0=opus, 1=gpt
-          const vendor = vendorIdx === 0 ? "opus" : "gpt";
+          const dsIdx = legendItem.datasetIndex;
+          const vendor = dsIdx === 0 ? "opus" : "gpt";
           if (vendorOfKey(currentSelection) === vendor) return;
-          const topIdx = vendorIdx;
-          const midIdx = vendorIdx + 2;
-          const willBeVisible = !chart.isDatasetVisible(topIdx);
-          chart.setDatasetVisibility(topIdx, willBeVisible);
-          chart.setDatasetVisibility(midIdx, willBeVisible);
+          const willBeVisible = !chart.isDatasetVisible(dsIdx);
+          if (willBeVisible) chart.show(dsIdx);
+          else chart.hide(dsIdx);
           legendItem.hidden = !willBeVisible;
-          chart.update();
         },
       },
       tooltip: {
@@ -1115,14 +1311,6 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
         filter: (item) => !item.dataset.label.startsWith("_"),
       },
       cornerLabels: Y_CFG_PRED.corner,
-      // Direct in-chart region labels — replace the role a 4-item
-      // legend would play.
-      yAnchoredLabel: {
-        labels: [
-          { y: 2.4, text: "top tail (solid)",  align: "right", offset: -1 },
-          { y: 0.42, text: "middle (dashed)", align: "right", offset: -1 },
-        ],
-      },
     },
     scales: { x: X_AXIS_TIME, y: Y_CFG_PRED.axis },
   },
@@ -1136,7 +1324,11 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
 //   (iii) human-to-human reference line, densified with hit-points so
 //        hovering anywhere along it fires a tooltip
 
-// Whiskers plugin config (dataset indices 0/1 = opus/gpt main lines).
+// Per-vendor CI is drawn as per-marker whiskers — a thin vertical
+// line at each release point spanning [corr_lo, corr_hi]. Honest
+// about CI being measured only at discrete release dates (no smooth
+// interpolation between them like a band would imply). Configured
+// here, drawn by errorBarsPlugin after datasets render.
 chartCorr.options.plugins.errorBars = {
   series: [
     {
@@ -1153,7 +1345,7 @@ chartCorr.options.plugins.errorBars = {
 };
 
 chartCorr.data.datasets.push(
-  // ----- Human-to-human reference band (95% CI). Order 0 = background. -----
+  // ----- Human-to-human reference band (95% CI). Order 0 = deepest back. -----
   {
     label: "_h2h_band_upper",
     data: [{ x: X_MIN, y: H2H_R_HI }, { x: X_MAX, y: H2H_R_HI }],
@@ -1172,7 +1364,7 @@ chartCorr.data.datasets.push(
     pointHoverRadius: 0,
     order: 0,
   },
-  // ----- Human-to-human reference line (visible, dashed). Order 1. -----
+  // ----- Human-to-human reference line (visible, dashed). Order 2. -----
   // Dense data points along the line give Chart.js something to detect
   // hover against, so the tooltip fires when the user mouses near the
   // line — the points themselves render at radius 0.
@@ -1183,27 +1375,56 @@ chartCorr.data.datasets.push(
     }),
     borderColor: H2H_LINE_COLOR,
     borderDash: [5, 4],
-    borderWidth: 1.4,
+    borderWidth: 1.2,
     pointRadius: 0,
     pointHoverRadius: 0,
-    pointHitRadius: 12,
+    // pointHitRadius 0: don't catch hover events. The reference value
+    // is labeled inline (callout in upper-left), and a hover tooltip
+    // here would compete with the marker tooltips when the line and
+    // markers overlap.
+    pointHitRadius: 0,
     pointStyle: "line",
     fill: false,
     spanGaps: true,
-    order: 1,
+    order: 2,
+  },
+  // ----- Theoretical max correlation reference line (dashed). Order 2. -----
+  {
+    label: `_theoretical_max_ref`,
+    data: [{ x: X_MIN, y: R_THEORETICAL_MAX }, { x: X_MAX, y: R_THEORETICAL_MAX }],
+    borderColor: H2H_LINE_COLOR,
+    borderDash: [5, 4],
+    borderWidth: 1.2,
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    pointStyle: "line",
+    fill: false,
+    order: 2,
   },
 );
-// Tufte-style callout for the dashed H2H reference line — text
-// floats in the upper-left region (below the "theoretical maximum"
-// label) with a thin leader line + arrowhead pointing down to the
-// line at y=0.189. Avoids overlap with both vendors' error bars
-// that cluster around the reference line in the middle of the chart.
+// Callout for the dashed H2H reference line — text floats in the
+// upper-left region with a thin leader line + arrowhead pointing down
+// to the line at y=0.189. Avoids overlap with both vendors' error
+// bars that cluster around the reference line in the middle of the
+// chart.
 chartCorr.options.plugins.callout = {
   items: [
     {
       text: `human-to-human correlation = ${H2H_R.toFixed(3)}`,
       textY: 0.33,   // text sits at this y (upper-left region)
       anchorY: H2H_R, // leader arrow points to the dashed line
+    },
+  ],
+};
+// Tufte-style direct label on the theoretical-max dashed line. Sits
+// at the right end of the line, italic gray, just above the line.
+chartCorr.options.plugins.yAnchoredLabel = {
+  labels: [
+    {
+      text: `theoretical max correlation = ${R_THEORETICAL_MAX.toFixed(3)}`,
+      y: R_THEORETICAL_MAX,
+      align: "right",
+      offset: -3,
     },
   ],
 };
@@ -1226,48 +1447,67 @@ chartPred.data.datasets.push({
   order: 1,
 });
 
-// Callout for the parity reference. Text sits just below the line
-// (in the empty band between the parity line and the middle-region
-// data), arrow pointing UP to the line.
-chartPred.options.plugins.callout = {
-  items: [
+// Tufte-style direct label for the parity reference line — italic
+// gray text sits just above the dashed line at the right end of the
+// chart. Stable across region switches: at the right end, top-region
+// data sits at y<0.75, bottom-region at y<0.5, middle-region at y>~9,
+// so the band just above y=1 is empty in every region. No arrow
+// needed; the proximity to the line carries the labeling.
+chartPred.options.plugins.yAnchoredLabel = {
+  labels: [
     {
-      text: "AI matches humans at this line",
-      textY: 0.5,
-      anchorY: 1,
+      text: "AI = humans here",
+      y: 1,
+      align: "right",
+      offset: -4,
     },
   ],
 };
+// First update flushes Chart.js's lazy option resolver.
 chartPred.update();
+
+// ----- Region picker for Fig 6 -----
+// Datasets 0-5: opus_top, gpt_top, opus_mid, gpt_mid, opus_bot, gpt_bot.
+// Only one region's vendor pair is visible at a time; the picker under
+// the title toggles between them. `currentPredRegion` is declared
+// earlier in the file (alongside TREND_DATA) so the chart's legend
+// callback can read it at construction time.
+function applyPredRegion(region) {
+  currentPredRegion = region;
+  // Swap data in-place. Chart.js's default animation interpolates
+  // each point's y between its old and new value (600 ms easeOutCubic
+  // from the chart's animation config), so the lines slide vertically
+  // from one region to the next rather than fading on/off. The parity
+  // label is at a fixed position now (yAnchoredLabel above y=1 at the
+  // right end), so it doesn't need to reposition per region.
+  chartPred.data.datasets[0].data = predDataFor("opus", region);
+  chartPred.data.datasets[1].data = predDataFor("gpt",  region);
+  chartPred.update();
+  document.querySelectorAll(".region-toggle").forEach((btn) => {
+    const active = btn.dataset.region === region;
+    btn.classList.toggle("is-active", active);
+    btn.setAttribute("aria-selected", String(active));
+  });
+}
+document.querySelectorAll(".region-toggle").forEach((btn) => {
+  btn.addEventListener("click", () => applyPredRegion(btn.dataset.region));
+});
+// Initialize with the same region the dataset was constructed with —
+// no data change, just syncs the picker pills' is-active class.
+applyPredRegion(currentPredRegion);
 
 // ============================================================
 // Highlight selected model in top charts
 // ============================================================
 
-function applyHighlight(modelKey) {
-  // When modelKey is "all" or falsy, every helper returns uniform default
-  // values. Always assigning ARRAYS here (not scalars) avoids a Chart.js
-  // quirk where switching from per-point arrays back to a scalar leaves
-  // the array values cached on individual point elements.
-  const key = (!modelKey || modelKey === "all") ? null : modelKey;
-  const setVendorStyle = (ds, vendor) => {
-    ds.pointRadius           = pointRadii(vendor, key);
-    ds.pointBorderWidth      = pointBorderWidths(vendor, key);
-    ds.pointBorderColor      = pointBorderColors(vendor, key);
-    ds.pointBackgroundColor  = pointFillColors(vendor, key);
-  };
-  for (const chart of [chartL1, chartCorr]) {
-    setVendorStyle(chart.data.datasets[0], "opus");
-    setVendorStyle(chart.data.datasets[1], "gpt");
+function applyHighlight(_modelKey) {
+  // Point sizes / colors / line widths are computed via scriptable
+  // Chart.js options that read `currentSelection` at render time, so
+  // a single chart.update() is enough to repaint the selection state
+  // — no need to mutate per-point arrays here.
+  for (const chart of [chartL1, chartCorr, chartPred]) {
     chart.update();
   }
-  // chartPred has 4 vendor datasets: opus_top=0, gpt_top=1, opus_mid=2, gpt_mid=3
-  const p = chartPred.data.datasets;
-  setVendorStyle(p[0], "opus");
-  setVendorStyle(p[1], "gpt");
-  setVendorStyle(p[2], "opus");
-  setVendorStyle(p[3], "gpt");
-  chartPred.update();
 }
 
 // ============================================================
@@ -2053,22 +2293,16 @@ function applyModelSelection(modelKey) {
   currentSelection = modelKey;
 
   // If a specific vendor is now selected, make sure that vendor's
-  // series is visible everywhere (un-hide if it had been toggled
-  // off via the legend). For chartPred there are TWO datasets per
-  // vendor (top tail at index v, middle at v+2).
+  // series is visible everywhere (un-hide if it had been toggled off
+  // via the legend). All three trend charts now have a uniform 2-
+  // dataset layout (opus=0, gpt=1).
   const vendor = vendorOfKey(modelKey);
   if (vendor) {
     const dsIdx = vendor === "opus" ? 0 : 1;
-    for (const chart of [chartL1, chartCorr]) {
+    for (const chart of [chartL1, chartCorr, chartPred]) {
       if (!chart.isDatasetVisible(dsIdx)) {
         chart.setDatasetVisibility(dsIdx, true);
       }
-    }
-    if (!chartPred.isDatasetVisible(dsIdx)) {
-      chartPred.setDatasetVisibility(dsIdx, true);
-    }
-    if (!chartPred.isDatasetVisible(dsIdx + 2)) {
-      chartPred.setDatasetVisibility(dsIdx + 2, true);
     }
   }
 
@@ -2139,7 +2373,7 @@ function applyModelSelection(modelKey) {
         color: "#888",
         lines: [
           `Best possible AI = ${theorySlope.toFixed(2)} · Human ${theorySign} ${Math.abs(theoryIntercept).toFixed(2)}`,
-          `Best possible correlation = ${theorySlope.toFixed(2)}`,
+          `Theoretical max correlation = ${theorySlope.toFixed(2)}`,
         ],
       },
     ];
