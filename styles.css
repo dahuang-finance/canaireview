@@ -19,6 +19,29 @@
   box-sizing: border-box;
 }
 
+/* Keyboard-only "skip to figures" link. Off-screen until a Tab puts
+   focus on it, then appears in the top-left corner. Mouse users never
+   see it; AT/keyboard users can jump past the header in one keystroke. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  padding: 0.55rem 0.85rem;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  border-radius: 0 0 4px 0;
+  z-index: 1000;
+}
+.skip-link:focus {
+  left: 0;
+  outline: 2px solid var(--highlight);
+  outline-offset: 0;
+}
+
 html {
   font-size: 17px;
 }

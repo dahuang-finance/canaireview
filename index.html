@@ -5,9 +5,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Can AI Replace the Peer Reviewer?</title>
   <meta name="description" content="A living research project comparing each new generation of frontier AI to human peer reviewers, using submissions to the Utah Winter Finance Conference.">
+  <link rel="canonical" href="https://canaireview.com/">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://canaireview.com/">
+  <meta property="og:title" content="Can AI Replace the Peer Reviewer?">
+  <meta property="og:description" content="A living comparison of frontier AI vs. human peer review, using submissions to the Utah Winter Finance Conference.">
+  <meta property="og:image" content="https://canaireview.com/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Can AI Replace the Peer Reviewer?">
+  <meta name="twitter:description" content="A living comparison of frontier AI vs. human peer review.">
+  <meta name="twitter:image" content="https://canaireview.com/og.png">
+
   <link rel="stylesheet" href="styles.css">
+
+  <!-- Chart.js + plugins. defer so they load in parallel with HTML
+       parsing but execute in document order after the DOM is ready. -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script defer src="charts.js"></script>
+  <script defer src="tooltips.js"></script>
 </head>
 <body>
+  <a class="skip-link" href="#fig-1">Skip to figures</a>
   <div class="page">
     <header class="page-header">
       <h1>Can AI Replace the Peer Reviewer?</h1>
@@ -337,10 +363,10 @@
               </span>
             </button>
           </h3>
-          <div class="region-toggle-group" role="tablist" aria-label="Score region">
-            <button class="region-toggle" type="button" role="tab" data-region="top">Top tail</button>
-            <button class="region-toggle is-active" type="button" role="tab" data-region="mid">Middle</button>
-            <button class="region-toggle" type="button" role="tab" data-region="bot">Bottom tail</button>
+          <div class="region-toggle-group" role="radiogroup" aria-label="Score region">
+            <button class="region-toggle" type="button" role="radio" aria-checked="false" data-region="top">Top tail</button>
+            <button class="region-toggle is-active" type="button" role="radio" aria-checked="true" data-region="mid">Middle</button>
+            <button class="region-toggle" type="button" role="radio" aria-checked="false" data-region="bot">Bottom tail</button>
           </div>
           <div class="chart-container">
             <canvas id="chart-pred"></canvas>
@@ -375,10 +401,5 @@
     </p>
   </footer>
 
-  <!-- Chart.js + plugins -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="charts.js"></script>
-  <script src="tooltips.js"></script>
 </body>
 </html>

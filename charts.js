@@ -1486,7 +1486,7 @@ function applyPredRegion(region) {
   document.querySelectorAll(".region-toggle").forEach((btn) => {
     const active = btn.dataset.region === region;
     btn.classList.toggle("is-active", active);
-    btn.setAttribute("aria-selected", String(active));
+    btn.setAttribute("aria-checked", String(active));
   });
 }
 document.querySelectorAll(".region-toggle").forEach((btn) => {
