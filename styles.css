@@ -44,6 +44,10 @@
 
 html {
   font-size: 17px;
+  /* Smooth-scroll in-page anchor jumps (e.g., the "→ Figure N" links
+     in the Findings list). User-agents that respect prefers-reduced-
+     motion already downgrade this to an instant jump. */
+  scroll-behavior: smooth;
 }
 
 body {
@@ -1177,6 +1181,14 @@ a:hover {
   h1 { font-size: 1.9rem; }
   .findings .entry.latest { padding-left: 0.9rem; }
   .findings ol li { padding-left: 1.9rem; }
+  /* On phone, the block eyebrow is long enough that putting the
+     model picker on the same row squeezes both. Drop the picker
+     beneath the eyebrow text and align it to the left edge. */
+  .block-eyebrow-only.with-picker {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
   /* DEAD: .figures-block-head / .models-strip / .models-chips — see
      banners above. Kept here so a future revert to the old layouts
      still gets correct mobile rules. */

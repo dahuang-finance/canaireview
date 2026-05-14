@@ -63,7 +63,7 @@
         <span class="link-tip-host"><a href="https://utahwfc.org/" target="_blank" rel="noopener">Utah Winter Finance Conference</a><span class="info-tooltip" role="tooltip">One of the most selective, longest-running, and highest-quality boutique finance conferences.<span class="tip-cite">Reinartz, S. J., and D. Urban, 2017, Finance conference quality and publication success: A conference ranking, <em>Journal of Empirical Finance</em> 42, 155&ndash;174.</span></span></span>
         (UWFC), where each paper is scored 1 (best) to 5 (worst) by two members of the program committee &mdash; a rotating pool of 121 leading finance researchers from 2016 to 2025.<sup><a class="fn-marker" href="#fn-anon" id="fn-anon-ref">[&dagger;]</a></sup>
         We ask AI to score the same papers the same way, then compare its scores against the humans'.
-        We repeat the study for every new frontier flagship release from OpenAI and Anthropic since November 2025, and will continue with each new release.
+        We run this comparison on every new frontier flagship release from OpenAI and Anthropic, and will continue with each new release. The project began in November 2025.
         Methodology in the
         <a href="#" class="placeholder-link">companion paper</a>
         <span class="muted">(coming soon)</span>.
@@ -224,7 +224,15 @@
         <figure class="fig-chart" id="fig-1">
           <p class="fig-eyebrow">Figure 1 &middot; Finding 1</p>
           <h3 class="fig-title">
-            Score Distributions
+            Score Distributions<button
+              class="info-trigger" type="button" tabindex="0"
+              aria-label="What does this chart show?"><span aria-hidden="true">?</span>
+              <span class="info-tooltip" role="tooltip">
+                Histogram of the share of papers each side assigns to
+                each 1&ndash;5 score. Bars sum to 100% within each
+                series.
+              </span>
+            </button>
             <span class="fig-subtitle" id="hist-subtitle">All-model average vs human reference</span>
           </h3>
           <div class="chart-container">
