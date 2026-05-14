@@ -17,6 +17,7 @@
     tip.style.bottom = "";
     tip.style.right = "";
     tip.style.transform = "";
+    tip.style.zIndex = "";
     tip.style.setProperty("--arrow-offset", "0px");
     tip.classList.remove("flipped");
   }
@@ -93,6 +94,11 @@
     tip.style.bottom = "auto";
     tip.style.right = "auto";
     tip.style.transform = "none";
+    // Raise the actively-positioned tooltip above any focus-pinned
+    // tooltips so a hover doesn't get visually buried behind one the
+    // user previously clicked. (CSS default z-index for .info-tooltip
+    // is 100, so 110 lifts this one above its peers.)
+    tip.style.zIndex = "110";
     tip.style.setProperty("--arrow-offset", `${arrowOffset}px`);
     if (flipped) tip.classList.add("flipped");
 
@@ -106,9 +112,23 @@
       host.addEventListener("focusin",    function ()  { position(host); });
       host.addEventListener("mouseleave", function () {
         const tip = getTip(host);
-        if (tip) reset(tip);
+        if (!tip) return;
+        if (host.matches(":focus-within") || host.classList.contains("pinned")) {
+          // Tooltip is staying open (focus or explicit pin). Keep the
+          // inline JS position so it doesn't snap back to the CSS
+          // default, but drop the raised z-index so a subsequently
+          // hovered tooltip can layer on top.
+          tip.style.zIndex = "";
+          return;
+        }
+        reset(tip);
       });
       host.addEventListener("focusout", function () {
+        // If the mouse is still hovering, hover keeps it open. If the
+        // tooltip is explicitly pinned (e.g., across a window switch),
+        // keep its position too.
+        if (host.matches(":hover")) return;
+        if (host.classList.contains("pinned")) return;
         const tip = getTip(host);
         if (tip) reset(tip);
       });
@@ -123,5 +143,68 @@
 
   window.addEventListener("resize", function () {
     document.querySelectorAll(".info-tooltip").forEach(reset);
+  });
+
+  // Re-anchor any pinned tooltip to its trigger as the page scrolls,
+  // so the tooltip tracks the question-mark instead of staying pinned
+  // in viewport coords and then "jumping" the next time the cursor
+  // enters the trigger area. Throttled to one frame.
+  let scrollRaf = null;
+  window.addEventListener("scroll", function () {
+    if (scrollRaf !== null) return;
+    scrollRaf = requestAnimationFrame(function () {
+      scrollRaf = null;
+      document.querySelectorAll(SELECTOR).forEach(function (host) {
+        const pinned = host.matches(":focus-within") || host.classList.contains("pinned");
+        if (!pinned) return;
+        const tip = getTip(host);
+        if (!tip || getComputedStyle(tip).display === "none") return;
+        // position() always raises z-index to 110; for pinned tooltips
+        // that have already been "demoted" on mouseleave we want to
+        // keep their current z-index so a separately hovered tooltip
+        // can still layer on top.
+        const savedZ = tip.style.zIndex;
+        position(host);
+        tip.style.zIndex = savedZ;
+      });
+    });
+  }, { passive: true });
+
+  // Explicit "pin" behavior. Clicking the question-mark adds a .pinned
+  // class so the tooltip stays visible even when the window loses focus
+  // (switching tabs/apps). Click outside any tooltip or trigger — or
+  // press Escape — to unpin.
+  function unpinHost(host) {
+    host.classList.remove("pinned");
+    // If nothing else is keeping the tooltip open (no hover, no focus),
+    // clear the inline styles so it doesn't linger in its last position
+    // the next time something briefly hovers it.
+    if (!host.matches(":hover") && !host.matches(":focus-within")) {
+      const tip = getTip(host);
+      if (tip) reset(tip);
+    }
+  }
+
+  function unpinAll() {
+    document.querySelectorAll(".info-trigger.pinned").forEach(unpinHost);
+  }
+
+  document.addEventListener("click", function (e) {
+    const trigger = e.target.closest(".info-trigger");
+    if (trigger) {
+      // Only one tooltip pinned at a time — unpin any others first.
+      document.querySelectorAll(".info-trigger.pinned").forEach(function (h) {
+        if (h !== trigger) unpinHost(h);
+      });
+      trigger.classList.add("pinned");
+      return;
+    }
+    // Clicks inside an already-open tooltip body don't unpin.
+    if (e.target.closest(".info-tooltip")) return;
+    unpinAll();
+  });
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") unpinAll();
   });
 })();

@@ -18,6 +18,7 @@
       </p>
     </header>
 
+    <div class="lede-findings-grid">
     <section class="abstract">
       <p>
         AI is being deployed at speed to review scientific work for
@@ -34,13 +35,10 @@
       </p>
       <p class="footnote" id="fn-anon">
         <span class="fn-mark">&dagger;</span>
-        All review data used in the analysis is anonymized &mdash; only
-        the 1&ndash;5 score, with no reviewer identity or written comment.
+        Only the anonymized 1&ndash;5 scores are used in the analysis &mdash; without reviewer identity or written comments.
       </p>
     </section>
 
-    <div class="content-grid">
-      <div class="main-col">
         <section class="findings">
           <h2>Findings</h2>
 
@@ -159,45 +157,10 @@
             previous entry's class from "entry latest" to "entry".
           -->
         </section>
+    </div><!-- /lede-findings-grid -->
 
-      </div><!-- /main-col -->
-
-      <aside class="sidebar">
-        <h3>Models covered</h3>
-        <ul class="run-log">
-          <li>
-            <div class="model">GPT&#8209;5.5</div>
-            <div class="meta">released 2026-04-23</div>
-            <div class="meta">run 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">Opus 4.7</div>
-            <div class="meta">released 2026-04-16</div>
-            <div class="meta">run 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">GPT&#8209;5.4</div>
-            <div class="meta">released 2026-03-05</div>
-            <div class="meta">run 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">Opus 4.6</div>
-            <div class="meta">released 2026-02-05</div>
-            <div class="meta">run 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">Opus 4.5</div>
-            <div class="meta">released 2025-11-24</div>
-            <div class="meta">run 2026-05-02</div>
-          </li>
-          <li>
-            <div class="model">GPT&#8209;5.1</div>
-            <div class="meta">released 2025-11-12</div>
-            <div class="meta">run 2026-05-02</div>
-          </li>
-        </ul>
-      </aside>
-    </div><!-- /content-grid -->
+    <div class="figures-grid">
+      <div class="figures-main">
 
     <!-- ============================================================ -->
     <!-- STATIC SNAPSHOT (Findings 1-3): Figures 1, 2, 3              -->
@@ -237,7 +200,25 @@
         <figure class="fig-chart" id="fig-2">
           <p class="fig-eyebrow">Figure 2 &middot; Finding 2</p>
           <h3 class="fig-title">
-            AI Score vs Human Reviewer Score
+            AI vs. Human Score<button
+              class="info-trigger" type="button" tabindex="0"
+              aria-label="What does this scatter plot show?"><span aria-hidden="true">?</span>
+              <span class="info-tooltip" role="tooltip">
+                Each dot is one reviewer's raw 1&ndash;5 score on a paper
+                (two reviewers per paper); reviewers occasionally give
+                half-step (x.5) scores. The theoretical maximum
+                correlation between an &ldquo;oracle AI&rdquo; and a
+                single random human reviewer is
+                <span style="white-space:nowrap">&radic;<em>r</em><sub>HH</sub> &asymp; 0.43</span>,
+                where <em>r</em><sub>HH</sub> is the human-to-human
+                correlation. The theoretical best-fit line produced by
+                the oracle AI uses that same 0.43 as the slope and
+                passes through the point with coordinates
+                (mean human score, mean human score). See the
+                <a href="#" class="placeholder-link">companion paper</a>
+                for details.
+              </span>
+            </button>
             <span class="fig-subtitle" id="scatter-subtitle">Each paper scored by two humans and one AI model</span>
           </h3>
           <div class="chart-container">
@@ -248,20 +229,18 @@
         <figure class="fig-chart" id="fig-3">
           <p class="fig-eyebrow">Figure 3 &middot; Finding 3</p>
           <h3 class="fig-title">
-            Citation Prediction by Score Region<button
+            Citation Prediction by Region<button
               class="info-trigger" type="button" tabindex="0"
               aria-label="What do these bars mean?"><span aria-hidden="true">?</span>
               <span class="info-tooltip" role="tooltip">
-                Each pair of bars shows |&beta;| from a Poisson PML
-                regression of citations on the human score and the AI
-                score (with review-year and citation-year fixed effects,
-                paper-clustered standard errors). Larger |&beta;|
-                = stronger predictive relationship with citations.
-                Papers are partitioned into three regions by mean human
-                score: top tail (mean &le; 1.5), middle (1.5 to 4.0),
-                bottom tail (mean &ge; 4.0). UWFC scoring is 1 = best,
-                5 = worst, so &beta; &lt; 0 is the predictively-correct
-                sign; we plot magnitudes.
+                Each pair of bars shows the magnitude of coefficients
+                from a Poisson regression of year-by-year citation count
+                on the human score and the AI score, with review-year
+                and citation-year fixed effects. Larger magnitude =
+                stronger predictive power on future citations. Poisson
+                regressions are run on three regions partitioned by mean
+                human score: top tail (mean &le; 1.5), middle (1.5 to 4.0),
+                bottom tail (mean &ge; 4.0).
               </span>
             </button>
             <span class="fig-subtitle" id="predictive-subtitle">All-model average</span>
@@ -367,6 +346,21 @@
         </figure>
       </div>
     </section>
+      </div><!-- /figures-main -->
+
+      <aside class="figures-sidebar">
+        <h3>Models<br>covered</h3>
+        <ul class="models-side-list">
+          <span class="model-row-indicator" aria-hidden="true"></span>
+          <li class="model-row" data-model="opus-4.7"><span class="model">Opus 4.7</span></li>
+          <li class="model-row" data-model="opus-4.6"><span class="model">Opus 4.6</span></li>
+          <li class="model-row" data-model="opus-4.5"><span class="model">Opus 4.5</span></li>
+          <li class="model-row vendor-break" data-model="gpt-5.5"><span class="model">GPT&#8209;5.5</span></li>
+          <li class="model-row" data-model="gpt-5.4"><span class="model">GPT&#8209;5.4</span></li>
+          <li class="model-row" data-model="gpt-5.1"><span class="model">GPT&#8209;5.1</span></li>
+        </ul>
+      </aside>
+    </div><!-- /figures-grid -->
   </div><!-- /page -->
 
   <footer>

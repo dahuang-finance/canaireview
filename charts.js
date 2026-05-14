@@ -150,6 +150,27 @@ const MODEL_LABELS = {
   "gpt-5.1":  "OpenAI GPT-5.1",
 };
 
+// Release + run dates surfaced in the static-snapshot eyebrow when a
+// specific model is locked. Single source of truth — update here when
+// a new frontier release is added or an existing model is re-run.
+const MODEL_RELEASE_DATES = {
+  "opus-4.7": "2026-04-16",
+  "opus-4.6": "2026-02-05",
+  "opus-4.5": "2025-11-24",
+  "gpt-5.5":  "2026-04-23",
+  "gpt-5.4":  "2026-03-05",
+  "gpt-5.1":  "2025-11-12",
+};
+
+const MODEL_RUN_DATES = {
+  "opus-4.7": "2026-05-02",
+  "opus-4.6": "2026-05-02",
+  "opus-4.5": "2026-05-02",
+  "gpt-5.5":  "2026-05-02",
+  "gpt-5.4":  "2026-05-02",
+  "gpt-5.1":  "2026-05-02",
+};
+
 // ============================================================
 // Style constants
 // ============================================================
@@ -474,14 +495,7 @@ const olsAnnotationPlugin = {
     const ctx = chart.ctx;
     ctx.save();
     ctx.font = "italic 11px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
-    ctx.textBaseline = "top";
 
-    // Measure each block's max line width so we can detect whether the
-    // left and right blocks would visually collide at the current chart
-    // width. At narrow chart sizes we suppress the right block (which
-    // carries the theoretical-best numbers) rather than let it overlap
-    // the left block — the dashed line itself still communicates the
-    // theoretical ceiling.
     const measureBlockWidth = (lines) => {
       let max = 0;
       for (const line of lines) {
@@ -491,41 +505,56 @@ const olsAnnotationPlugin = {
       return max;
     };
 
-    const leftBlocks  = cfg.blocks.filter((b) => b.align !== "right");
-    const rightBlocks = cfg.blocks.filter((b) => b.align === "right");
     const plotLeft  = xScale.left + 8;
     const plotRight = xScale.right - 8;
     const plotWidth = plotRight - plotLeft;
-    const leftMaxW  = leftBlocks.reduce(
-      (m, b) => Math.max(m, measureBlockWidth(b.lines || [])), 0);
-    const rightMaxW = rightBlocks.reduce(
-      (m, b) => Math.max(m, measureBlockWidth(b.lines || [])), 0);
-    const overlap = leftMaxW + rightMaxW + 24 > plotWidth;
+    const LINE_H = 14;
 
-    // Draw left blocks always.
-    for (const block of leftBlocks) {
+    // Overlap is per-row: blocks in the top row can collide with each
+    // other; blocks in the bottom row live in their own row and don't
+    // compete with the top row. The right-side block is hidden when
+    // its row's left + right widths would overlap.
+    const rowOverlap = (vRow) => {
+      const blocks = cfg.blocks.filter((b) => (b.vAlign || "top") === vRow);
+      const lW = blocks.filter((b) => b.align !== "right")
+        .reduce((m, b) => Math.max(m, measureBlockWidth(b.lines || [])), 0);
+      const rW = blocks.filter((b) => b.align === "right")
+        .reduce((m, b) => Math.max(m, measureBlockWidth(b.lines || [])), 0);
+      return lW + rW + 24 > plotWidth;
+    };
+    const topOverlap    = rowOverlap("top");
+    const bottomOverlap = rowOverlap("bottom");
+
+    for (const block of cfg.blocks) {
       const lines = block.lines || [];
       if (!lines.length) continue;
-      ctx.textAlign = "left";
-      ctx.fillStyle = block.color || "#777";
-      let y = yScale.top + 4;
-      for (const line of lines) {
-        ctx.fillText(line, plotLeft, y);
-        y += 14;
-      }
-    }
+      const align  = block.align  === "right"  ? "right"  : "left";
+      const vAlign = block.vAlign === "bottom" ? "bottom" : "top";
+      // Suppress a right-side block when its row can't fit both.
+      if (align === "right" && (
+        (vAlign === "top"    && topOverlap) ||
+        (vAlign === "bottom" && bottomOverlap)
+      )) continue;
 
-    // Draw right blocks only when there's room.
-    if (!overlap) {
-      for (const block of rightBlocks) {
-        const lines = block.lines || [];
-        if (!lines.length) continue;
-        ctx.textAlign = "right";
-        ctx.fillStyle = block.color || "#777";
+      ctx.textAlign = align;
+      ctx.fillStyle = block.color || "#777";
+      const x = align === "right" ? plotRight : plotLeft;
+
+      if (vAlign === "top") {
+        ctx.textBaseline = "top";
         let y = yScale.top + 4;
         for (const line of lines) {
-          ctx.fillText(line, plotRight, y);
-          y += 14;
+          ctx.fillText(line, x, y);
+          y += LINE_H;
+        }
+      } else {
+        // Bottom row: anchor the last line just above the x-axis and
+        // stack earlier lines upward, so reading order is preserved.
+        ctx.textBaseline = "bottom";
+        const n = lines.length;
+        for (let i = 0; i < n; i++) {
+          const yi = yScale.bottom - 4 - (n - 1 - i) * LINE_H;
+          ctx.fillText(lines[i], x, yi);
         }
       }
     }
@@ -965,7 +994,7 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
           },
         },
         tooltip: {
-          backgroundColor: "rgba(20,20,20,0.92)",
+          backgroundColor: "rgba(20,20,20,0.84)",
           padding: 10,
           titleFont: { weight: "600", size: 12 },
           bodyFont: { size: 12 },
@@ -1068,7 +1097,7 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
         },
       },
       tooltip: {
-        backgroundColor: "rgba(20,20,20,0.92)",
+        backgroundColor: "rgba(20,20,20,0.84)",
         padding: 10,
         titleFont: { weight: "600", size: 12 },
         bodyFont: { size: 12 },
@@ -1425,7 +1454,7 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
         onClick: () => {},
       },
       tooltip: {
-        backgroundColor: "rgba(20,20,20,0.92)",
+        backgroundColor: "rgba(20,20,20,0.84)",
         padding: 10,
         callbacks: {
           label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(1)}%`,
@@ -1436,7 +1465,22 @@ const chartHist = new Chart(document.getElementById("chart-hist"), {
       x: {
         grid: { display: false },
         border: { color: "#bbb" },
-        ticks: { color: "#444", font: { size: 11 } },
+        ticks: {
+          color: "#444",
+          font: { size: 11 },
+          // Keep labels horizontal — never rotate. At narrow widths
+          // drop the middle labels ("2", "3", "4") so the endpoints
+          // "1 (best)" and "5 (worst)" stay readable and horizontal
+          // without overlap.
+          maxRotation: 0,
+          autoSkip: false,
+          callback: function (value, index) {
+            if (this.chart.width < 340 && index >= 1 && index <= 3) {
+              return "";
+            }
+            return this.getLabelForValue(value);
+          },
+        },
       },
       y: {
         beginAtZero: true,
@@ -1719,7 +1763,7 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         onClick: () => {},   // these aren't real toggleable series
       },
       tooltip: {
-        backgroundColor: "rgba(20,20,20,0.92)",
+        backgroundColor: "rgba(20,20,20,0.84)",
         padding: 10,
         callbacks: {
           title: () => "",
@@ -1757,7 +1801,7 @@ const chartScatter = new Chart(document.getElementById("chart-scatter"), {
         border: { color: "#bbb" },
         title: {
           display: true,
-          text: "Human reviewer score (reviewers occasionally give half-step scores)",
+          text: "Human score",
           padding: 6,
           color: "#666",
           font: { size: 11 },
@@ -1870,7 +1914,7 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         onClick: () => {},
       },
       tooltip: {
-        backgroundColor: "rgba(20,20,20,0.92)",
+        backgroundColor: "rgba(20,20,20,0.84)",
         padding: 10,
         callbacks: {
           title: (items) => {
@@ -1911,7 +1955,7 @@ const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
         grid: { display: false },
         border: { color: "#bbb" },
         ticks: {
-          color: "#333",
+          color: "#666",
           font: { size: 10.5 },
           autoSkip: false,
           maxRotation: 0,
@@ -2068,16 +2112,21 @@ function applyModelSelection(modelKey) {
       { x: 5, y: theorySlope * 5 + theoryIntercept },
     ];
 
-    // Inside-the-chart annotations: actual model's OLS on the left
-    // (tinted in the binned-mean line color), variance-matched-oracle
-    // ceiling on the right (gray, matching the theoretical dashed
-    // line). Reader can read the actual-vs-ceiling gap directly.
+    // Inside-the-chart annotations: actual model's OLS at the top-left
+    // (tinted in the binned-mean line color); variance-matched-oracle
+    // ceiling at the bottom-right (gray, matching the dashed line).
+    // Putting the two blocks in different rows means they no longer
+    // compete for the same horizontal space, so the right block stays
+    // visible at every chart width. The bottom-right plot region is
+    // mostly empty (high human score + low AI score is rare), so the
+    // annotation lands in clean space.
     const { b, a, r } = computeScatterOLS(points);
     const sign = a >= 0 ? "+" : "−";
     const theorySign = theoryIntercept >= 0 ? "+" : "−";
     chartScatter.options.plugins.olsAnnotation.blocks = [
       {
         align: "left",
+        vAlign: "top",
         color: scatterLineColor(modelKey),
         lines: [
           `AI = ${b.toFixed(2)} · Human ${sign} ${Math.abs(a).toFixed(2)}`,
@@ -2086,10 +2135,11 @@ function applyModelSelection(modelKey) {
       },
       {
         align: "right",
+        vAlign: "bottom",
         color: "#888",
         lines: [
-          `Theoretical best AI = ${theorySlope.toFixed(2)} · Human ${theorySign} ${Math.abs(theoryIntercept).toFixed(2)}`,
-          `Theoretical max correlation = ${theorySlope.toFixed(2)}`,
+          `Best possible AI = ${theorySlope.toFixed(2)} · Human ${theorySign} ${Math.abs(theoryIntercept).toFixed(2)}`,
+          `Best possible correlation = ${theorySlope.toFixed(2)}`,
         ],
       },
     ];
@@ -2102,9 +2152,17 @@ function applyModelSelection(modelKey) {
   // Section 1's inline eyebrow updates based on selection.
   const blockTitle = document.getElementById("drilldown-title");
   if (blockTitle) {
-    blockTitle.textContent = (modelKey === "all")
-      ? "Findings 1–3 · Look across all six models"
-      : `Findings 1–3 · Look inside ${label}`;
+    if (modelKey === "all") {
+      blockTitle.textContent = "Findings 1–3 · Look across all six models";
+    } else {
+      const released = MODEL_RELEASE_DATES[modelKey];
+      const run = MODEL_RUN_DATES[modelKey];
+      const parts = [];
+      if (released) parts.push(`released ${released}`);
+      if (run) parts.push(`run ${run}`);
+      const suffix = parts.length ? ` (${parts.join(", ")})` : "";
+      blockTitle.textContent = `Findings 1–3 · Look inside ${label}${suffix}`;
+    }
   }
 
   // Per-figure subtitles
@@ -2121,30 +2179,158 @@ function applyModelSelection(modelKey) {
 // Two synced model pickers — one at the top (Section 1, Findings 1-3)
 // and one with the trend block (Section 2, Finding 4). Changing either
 // mirrors the value into the other and re-runs applyModelSelection.
+//
+// A third picker UI lives in the figures-sidebar (one row per model).
+// It hovers to preview and clicks to lock/unlock; it shares
+// `lockedSelection` and `selectModel` below.
 const modelPickers = [
   document.getElementById("model-select"),
   document.getElementById("model-select-2"),
 ].filter(Boolean);
 
-function selectModel(value) {
+// "lockedSelection" is the user's committed choice (via dropdown or
+// sidebar click). `currentSelection` (inside applyModelSelection)
+// tracks the displayed model, which can temporarily diverge during a
+// sidebar hover preview before reverting on mouseleave.
+let lockedSelection = "all";
+
+const sidebarList = document.querySelector(".models-side-list");
+const sidebarRows = Array.from(
+  document.querySelectorAll(".models-side-list li.model-row[data-model]")
+);
+const sidebarIndicator = document.querySelector(".model-row-indicator");
+
+function positionSidebarIndicator(modelKey) {
+  if (!sidebarIndicator || !sidebarList) return;
+  const selectedRow = sidebarRows.find((r) => r.dataset.model === modelKey);
+  if (!selectedRow) {
+    sidebarIndicator.classList.remove("visible");
+    return;
+  }
+  const listRect = sidebarList.getBoundingClientRect();
+  const rowRect = selectedRow.getBoundingClientRect();
+  const wasVisible = sidebarIndicator.classList.contains("visible");
+  // First time becoming visible: pin position without transitioning,
+  // then fade in. Otherwise let CSS transition the slide.
+  if (!wasVisible) {
+    const prev = sidebarIndicator.style.transition;
+    sidebarIndicator.style.transition = "none";
+    sidebarIndicator.style.transform = `translateY(${rowRect.top - listRect.top}px)`;
+    sidebarIndicator.style.height = `${rowRect.height}px`;
+    // Force a reflow before re-enabling transitions.
+    void sidebarIndicator.offsetHeight;
+    sidebarIndicator.style.transition = prev;
+    sidebarIndicator.classList.add("visible");
+  } else {
+    sidebarIndicator.style.transform = `translateY(${rowRect.top - listRect.top}px)`;
+    sidebarIndicator.style.height = `${rowRect.height}px`;
+  }
+}
+
+function syncSidebarSelected(modelKey) {
+  for (const row of sidebarRows) {
+    if (row.dataset.model === modelKey) row.classList.add("selected");
+    else row.classList.remove("selected");
+  }
+  positionSidebarIndicator(modelKey);
+}
+
+// Pulse a dropdown briefly so the user sees the sync rather than a
+// silent text swap. Re-trigger by toggling the class off then on so
+// rapid successive syncs still animate each time.
+function pulsePicker(picker) {
+  picker.classList.remove("just-synced");
+  // Force reflow so re-adding the class restarts the animation.
+  void picker.offsetWidth;
+  picker.classList.add("just-synced");
+}
+
+function selectModel(value, opts) {
+  opts = opts || {};
+  lockedSelection = value;
   for (const p of modelPickers) {
-    if (p.value !== value) p.value = value;
+    if (p.value !== value) {
+      p.value = value;
+      // The picker the user just changed doesn't need a pulse — they
+      // saw their own action. Pulse only the partner picker(s).
+      if (p !== opts.source) pulsePicker(p);
+    } else if (opts.source && p === opts.source) {
+      // Same value, originated here: no pulse needed.
+    } else if (!opts.source) {
+      // Triggered from outside the dropdowns (e.g. sidebar): pulse
+      // every dropdown whose value would be the new value so the
+      // sync is visible everywhere.
+      pulsePicker(p);
+    }
   }
   applyModelSelection(value);
+  syncSidebarSelected(value);
 }
 
 for (const picker of modelPickers) {
-  picker.addEventListener("change", (e) => selectModel(e.target.value));
+  picker.addEventListener("change", (e) => {
+    selectModel(e.target.value, { source: e.target });
+    // Drop focus so the dropdown leaves the focus state.
+    e.target.blur();
+    // Also suppress :hover until the next real mousemove — see CSS
+    // comment for why this is needed.
+    const target = e.target;
+    target.classList.add("suppress-hover");
+    const clearSuppress = () => {
+      target.classList.remove("suppress-hover");
+      document.removeEventListener("mousemove", clearSuppress);
+    };
+    document.addEventListener("mousemove", clearSuppress);
+  });
+}
+
+// Sidebar row interactions: hover previews the model in the charts;
+// mouseleave reverts to the locked selection; click locks it (or
+// unlocks if clicking the already-locked row, reverting to "all").
+//
+// The mouseleave-revert is deferred ~60 ms so that sweeping the mouse
+// from one row to the next cancels the revert before any visible
+// flash to the locked model.
+let revertTimer = null;
+function cancelRevert() {
+  if (revertTimer !== null) {
+    clearTimeout(revertTimer);
+    revertTimer = null;
+  }
+}
+
+for (const row of sidebarRows) {
+  const model = row.dataset.model;
+  row.addEventListener("mouseenter", () => {
+    cancelRevert();
+    if (currentSelection !== model) applyModelSelection(model);
+  });
+  row.addEventListener("mouseleave", () => {
+    cancelRevert();
+    revertTimer = setTimeout(() => {
+      revertTimer = null;
+      if (currentSelection !== lockedSelection) {
+        applyModelSelection(lockedSelection);
+      }
+    }, 60);
+  });
+  row.addEventListener("click", () => {
+    cancelRevert();
+    if (lockedSelection === model) {
+      selectModel("all");
+    } else {
+      selectModel(model);
+    }
+  });
 }
 
 // Initialize state
 applyModelSelection("all");
+syncSidebarSelected("all");
 
 // Findings "+ details" / "− details" expand-collapse toggles. Each
 // button has an aria-controls pointing at the corresponding details
-// div; click flips the hidden attribute and the aria-expanded state,
-// then re-syncs the sidebar's max-height (next block) so the sidebar
-// tracks the findings block's current height.
+// div; click flips the hidden attribute and the aria-expanded state.
 document.querySelectorAll(".finding-toggle").forEach((btn) => {
   btn.addEventListener("click", () => {
     const targetId = btn.getAttribute("aria-controls");
@@ -2154,7 +2340,6 @@ document.querySelectorAll(".finding-toggle").forEach((btn) => {
     btn.setAttribute("aria-expanded", String(!expanded));
     target.hidden = expanded;
     btn.textContent = expanded ? "+ details" : "− details";
-    syncSidebarHeight();
   });
 });
 
@@ -2217,30 +2402,20 @@ function positionAllLeadTools() {
   document.querySelectorAll(".finding-lead").forEach(positionLeadTools);
 }
 
-// Dynamically constrain the "Models covered" sidebar so its overall
-// height never exceeds the findings block's current height. The
-// .run-log inside is flex 1 1 auto with overflow-y: auto, so any
-// list overflow scrolls within the constrained sidebar.
-function syncSidebarHeight() {
-  const findings = document.querySelector(".findings");
-  const sidebar = document.querySelector(".sidebar");
-  if (!findings || !sidebar) return;
-  sidebar.style.maxHeight = `${findings.offsetHeight}px`;
-}
-
 positionAllLeadTools();
-syncSidebarHeight();
 
 // Fonts can finish loading after the first sync, which re-wraps the
 // claim text — re-run once they're ready so the position is correct.
 if (document.fonts && document.fonts.ready) {
   document.fonts.ready.then(() => {
     positionAllLeadTools();
-    syncSidebarHeight();
   });
 }
 
 window.addEventListener("resize", () => {
   positionAllLeadTools();
-  syncSidebarHeight();
+  // Re-anchor the sidebar indicator to the (possibly moved) selected row.
+  if (lockedSelection && lockedSelection !== "all") {
+    positionSidebarIndicator(lockedSelection);
+  }
 });

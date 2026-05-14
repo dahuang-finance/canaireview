@@ -11,7 +11,7 @@
   --highlight: #fff39a;
   --max-page: 1500px;
   --col-main: 720px;
-  --col-side: 160px;
+  --col-side: 78px;
   --col-gap: 4rem;
 }
 
@@ -56,10 +56,13 @@ footer p {
   margin: 0.25rem 0;
 }
 
-/* ---------- Header & abstract: text column, aligned to the left
-   edge of the content-grid below so the eye reads a single column
-   from header → abstract → findings. ---------- */
-.page-header,
+/* ---------- Header: matches lede column on wide screens. ---------- */
+.page-header {
+  max-width: var(--col-main);
+}
+
+/* Default abstract width when not inside the lede-findings grid
+   (i.e., narrow / stacked screens — see media queries below). */
 .abstract {
   max-width: var(--col-main);
 }
@@ -136,16 +139,219 @@ h1 {
   margin-right: 0.25em;
 }
 
-/* ---------- Content grid (main + sidebar) ---------- */
-.content-grid {
+/* ---------- Lede + Findings: side-by-side 40/60 on wide screens,
+   stacked on narrow screens (see responsive section). The lede stays
+   readable on wide monitors; findings get the extra room they need
+   for expandable details. ---------- */
+.lede-findings-grid {
   display: grid;
-  grid-template-columns: minmax(0, var(--col-main)) var(--col-side);
+  grid-template-columns: 2fr 3fr;
   gap: var(--col-gap);
   align-items: start;
+  margin: 0 0 2.5rem;
 }
 
-.main-col {
+.lede-findings-grid .abstract {
+  max-width: none;
+  margin: 0;
+}
+
+/* ---------- Figures + sidebar: 2-col so Models Covered pairs with
+   the figure picker (its natural reference). Sidebar is sticky so it
+   stays visible as the reader scrolls through both figure sections. */
+.figures-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--col-side);
+  /* Tighter than the lede-findings grid: the sidebar is compact and
+     doesn't need a 4rem moat to separate it from the figures. */
+  gap: 2rem;
+  align-items: start;
+  /* Spacing that used to live on .figures-block top margin moves up
+     here so the figures column and the sidebar align at the top. */
+  margin-top: 3rem;
+}
+
+.figures-main {
   min-width: 0;
+}
+
+.figures-sidebar {
+  position: sticky;
+  top: 1.5rem;
+}
+
+.figures-sidebar h3 {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  /* Tighter tracking than other eyebrows so "COVERED" fits in the
+     narrow 85-px sidebar column. */
+  letter-spacing: 0.05em;
+  line-height: 1.25;
+  color: var(--accent);
+  margin: 0 0 1rem;
+}
+
+.models-side-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+/* A single dark "selection block" that lives behind the rows and
+   translates between them when the locked model changes. Gives a true
+   slide effect rather than a flash-in / flash-out. */
+.model-row-indicator {
+  position: absolute;
+  left: -0.4rem;
+  right: 0;
+  top: 0;
+  height: 0;
+  background: var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 0.2s ease;
+}
+
+.model-row-indicator.visible {
+  opacity: 1;
+}
+
+.models-side-list li.model-row {
+  display: block;
+  padding: 0.55rem 0 0.55rem 0.4rem;
+  margin-left: -0.4rem;
+  border-bottom: 1px dashed var(--rule-soft);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.models-side-list li.model-row:first-child {
+  padding-top: 0.2rem;
+}
+
+.models-side-list li.model-row:last-child {
+  border-bottom: none;
+}
+
+/* The row before a vendor break drops its dashed divider entirely —
+   the solid group boundary is drawn by a ::before on .vendor-break
+   in the margin space between the two rows. Doing it this way (rather
+   than as a border + extra padding on the rows themselves) keeps each
+   row's box at its natural height, so the slide indicator doesn't
+   grow when it sits over Opus 4.5 or GPT-5.5. */
+.models-side-list li.model-row:has(+ .vendor-break) {
+  border-bottom: none;
+}
+
+.models-side-list .model {
+  display: block;
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  transition: color 0.25s ease;
+}
+
+.models-side-list li.model-row:hover {
+  background: var(--accent-soft);
+}
+
+.models-side-list li.model-row:hover .model {
+  color: var(--accent);
+}
+
+/* Locked selection — the dark fill comes from the shared
+   .model-row-indicator (which slides between rows), so the row
+   itself stays transparent. Only the text style flips. */
+.models-side-list li.model-row.selected,
+.models-side-list li.model-row.selected:hover {
+  background: transparent;
+}
+
+.models-side-list li.model-row.selected .model,
+.models-side-list li.model-row.selected:hover .model {
+  color: var(--paper);
+  font-weight: 700;
+}
+
+/* Margin (not padding) creates the group gap, so the row's bounding
+   box stays at its natural height — the slide indicator over GPT-5.5
+   doesn't get taller. A ::before in the middle of that margin draws
+   the solid group divider. */
+.models-side-list li.model-row.vendor-break {
+  margin-top: 1.15rem;
+}
+
+.models-side-list li.model-row.vendor-break::before {
+  content: "";
+  position: absolute;
+  top: -0.575rem; /* halfway up the 1.15rem gap */
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--rule);
+}
+
+/* ---------- (Unused — kept for easy revert) Models horizontal strip
+   ---------- */
+.models-strip {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.6rem;
+  padding: 1.2rem 0 1.3rem;
+  margin: 0 0 3rem;
+  border-top: 1px solid var(--rule-soft);
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.models-strip-label {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  flex-shrink: 0;
+  padding-top: 0.1rem;
+  white-space: nowrap;
+}
+
+.models-chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.4rem 1.8rem;
+  flex: 1 1 auto;
+}
+
+.models-chips li {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.models-chips .model {
+  font-weight: 600;
+  font-size: 0.92rem;
+  line-height: 1.2;
+  margin-bottom: 0.2rem;
+}
+
+.models-chips .meta {
+  color: var(--muted);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
 }
 
 /* ---------- Section headings ---------- */
@@ -319,7 +525,7 @@ h3 {
 
 /* ---------- Figures (full-width sections, two blocks) ---------- */
 .figures-block {
-  margin: 3rem 0 1.5rem;
+  margin: 0 0 1.5rem;
 }
 
 /* Tight gap between the two blocks so vertical pairing (Fig 1↔4,
@@ -351,7 +557,20 @@ h3 {
   align-items: center;
   justify-content: space-between;
   gap: 1.5rem;
-  flex-wrap: wrap;
+  /* Keep the picker on the same row at all widths above the mobile
+     breakpoint — let the eyebrow sentence wrap inside its own flex
+     item instead of dropping the picker to a new line. */
+}
+
+.block-eyebrow-only.with-picker .block-eyebrow-text {
+  flex: 1 1 auto;
+  /* min-width: 0 is what lets the flex item shrink past its content's
+     intrinsic min-content size, which is what enables word-wrapping. */
+  min-width: 0;
+}
+
+.block-eyebrow-only.with-picker .model-picker {
+  flex-shrink: 0;
 }
 
 .block-eyebrow-only .block-eyebrow-text {
@@ -442,6 +661,28 @@ h3 {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px rgba(42,42,42,0.08);
+}
+
+/* After the native popup closes from an option-click, the browser
+   keeps reporting the dropdown as :hover (the document hasn't received
+   a fresh mousemove yet) — even when the user clicked an option below
+   the dropdown box. Suppress the hover styling until the next real
+   mousemove so the dropdown returns to the empty state immediately. */
+.model-picker select.suppress-hover:hover {
+  border-color: var(--rule);
+}
+
+/* Brief pulse on the dropdowns when their value changes from outside
+   (sidebar click or the partner dropdown), so the reader sees the
+   sync rather than a silent text swap. */
+.model-picker select.just-synced {
+  animation: picker-sync-pulse 0.9s ease;
+}
+
+@keyframes picker-sync-pulse {
+  0%   { background-color: var(--paper);       border-color: var(--accent); }
+  35%  { background-color: var(--accent-soft); border-color: var(--accent); }
+  100% { background-color: var(--paper);       border-color: var(--rule);   }
 }
 
 /* ---------- Figure subtitle (small descriptor under fig title) ---------- */
@@ -566,12 +807,49 @@ h3 {
   line-height: 1.5;
 }
 
+.tip-eq {
+  display: block;
+  margin: 0.4rem 0;
+  text-align: center;
+  font-style: normal;
+}
+
 .info-trigger:hover .info-tooltip,
 .info-trigger:focus .info-tooltip,
 .info-trigger:focus-within .info-tooltip,
+.info-trigger.pinned .info-tooltip,
 .link-tip-host:hover .info-tooltip,
 .link-tip-host:focus-within .info-tooltip {
   display: block;
+}
+
+/* Hover-only tooltips stay non-interactive (pointer-events: none on
+   .info-tooltip) so the cursor can't get "stuck" trying to reach the
+   tooltip body across the gap. Once the tooltip is pinned (either by
+   focus while in this window, or by the explicit .pinned class which
+   persists across window/tab switches), re-enable pointer-events so
+   the user can select text, right-click links, etc.
+   Also: the tooltip lives inside the .info-trigger <button>, which
+   normally inherits cursor: help down to it and suppresses text
+   selection (button content is treated as a label). Override both
+   on the pinned state. */
+.info-trigger:focus-within .info-tooltip,
+.info-trigger.pinned .info-tooltip,
+.link-tip-host:focus-within .info-tooltip {
+  pointer-events: auto;
+  /* cursor: auto lets the browser pick contextually — I-beam over
+     text, default arrow over padding/whitespace — instead of being
+     pinned to one cursor everywhere. Beats the inherited cursor: help
+     from .info-trigger. */
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.info-trigger:focus-within .info-tooltip a,
+.info-trigger.pinned .info-tooltip a,
+.link-tip-host:focus-within .info-tooltip a {
+  cursor: pointer;
 }
 
 .link-tip-host {
@@ -614,6 +892,19 @@ h3 {
   padding: 0;
   background: transparent;
   border: none;
+}
+
+/* Fig 2 (scatter) carries both a y- and x-axis title plus a top legend
+   and a bottom-right OLS annotation, so it gets the biggest bump:
+   5/4 (~80% of width). Fig 3 has only a y-axis title — slightly less
+   crowded — so 4/3 (~75% of width) is enough. Fig 1 has no axis titles
+   and stays at the global 10/7 default. */
+.fig-chart#fig-2 .chart-container {
+  aspect-ratio: 5 / 4;
+}
+
+.fig-chart#fig-3 .chart-container {
+  aspect-ratio: 4 / 3;
 }
 
 /* Pin the canvas as an absolute overlay so its drawing buffer never
@@ -701,61 +992,6 @@ h3 {
   line-height: 1.4;
 }
 
-/* ---------- Sidebar (Models covered) ---------- */
-.sidebar {
-  align-self: start;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  /* max-height is set dynamically by JS to match the findings block's
-     current height (which changes as readers expand/collapse details). */
-}
-
-.sidebar h3 {
-  flex-shrink: 0;
-}
-
-.sidebar .run-log {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  /* Subtle scrollbar styling (WebKit) */
-  scrollbar-width: thin;
-}
-
-.sidebar .run-log::-webkit-scrollbar { width: 6px; }
-.sidebar .run-log::-webkit-scrollbar-thumb {
-  background: var(--rule);
-  border-radius: 3px;
-}
-
-.sidebar .run-log li {
-  padding: 0.65rem 0;
-  border-bottom: 1px dashed var(--rule-soft);
-}
-
-.sidebar .run-log li:last-child {
-  border-bottom: none;
-}
-
-.sidebar .run-log .model {
-  font-weight: 600;
-  font-size: 0.95rem;
-  line-height: 1.2;
-  margin-bottom: 0.3rem;
-}
-
-.sidebar .run-log .meta {
-  color: var(--muted);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
-  line-height: 1.45;
-}
-
 /* ---------- Links ---------- */
 a {
   color: var(--ink);
@@ -784,13 +1020,23 @@ a:hover {
   }
 }
 
-/* On small screens, stack everything. */
+/* On medium screens (laptop ≤ 920px), the 40/60 grid pushes the lede
+   below ~320 px which breaks reading flow. Stack lede above findings,
+   and restore the lede's max-width so it doesn't render as a 900-px
+   reading line. */
 @media (max-width: 920px) {
-  .content-grid {
+  .lede-findings-grid {
     grid-template-columns: 1fr;
     gap: 2rem;
   }
-  .sidebar {
+  .lede-findings-grid .abstract {
+    max-width: var(--col-main);
+  }
+  .figures-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  .figures-sidebar {
     position: static;
     border-top: 1px solid var(--rule-soft);
     padding-top: 1.2rem;
@@ -809,6 +1055,7 @@ a:hover {
   }
 }
 
+/* On phone, stack models-strip label above the chips. */
 @media (max-width: 640px) {
   html { font-size: 16px; }
   .page { padding: 2rem 1.2rem 2rem; border: none; }
@@ -816,4 +1063,12 @@ a:hover {
   .findings .entry.latest { padding-left: 0.9rem; }
   .findings ol li { padding-left: 1.9rem; }
   .figures-block-head .block-title { font-size: 1.2rem; }
+  .models-strip {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.9rem;
+  }
+  .models-chips {
+    gap: 1rem 1.4rem;
+  }
 }
