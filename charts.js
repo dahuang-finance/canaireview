@@ -31,16 +31,18 @@
 // Poisson coefficient over the human score's, in that region. Higher
 // = AI predicts citations better than humans (above 1 = AI dominant;
 // below 1 = humans dominant).
+// L1 values match the paper's Table 2 (computed against the full
+// cleaned_master_*.dta human reference, N=4,573 paper-reviewer scores).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.814, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 0.248, pred_mid: 3.831, pred_bot: 0.561 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.650, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 0.434, pred_mid: 4.197, pred_bot: 0.470 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.454, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291, pred_top: 0.754, pred_mid: 10.260, pred_bot: 0.319 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.829, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 0.248, pred_mid: 3.831, pred_bot: 0.561 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.661, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 0.434, pred_mid: 4.197, pred_bot: 0.470 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.428, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291, pred_top: 0.754, pred_mid: 10.260, pred_bot: 0.319 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.898, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 0.334, pred_mid: 1.402, pred_bot: 0.525 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.734, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196, pred_top: 0.035, pred_mid: 2.511, pred_bot: 0.966 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.449, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209, pred_top: 0.215, pred_mid: 9.481, pred_bot: 0.409 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.929, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 0.334, pred_mid: 1.402, pred_bot: 0.525 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.746, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196, pred_top: 0.035, pred_mid: 2.511, pred_bot: 0.966 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.461, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209, pred_top: 0.215, pred_mid: 9.481, pred_bot: 0.409 },
   ],
 };
 
@@ -100,11 +102,12 @@ function easeOutCubic(t) {
   return 1 - Math.pow(1 - t, 3);
 }
 
-// Per-model histograms and 5x5 heatmaps (computed from cleaned_master joined
-// with all_v1_baseline.csv; see the code/make_paper_figures.py / direct python
-// dump that produced website/figures_data.json).
+// Per-model histograms and 5x5 heatmaps. The human_hist row is the
+// pooled human reference distribution from cleaned_master_*.dta
+// (N=4,573 paper-reviewer scores across 2,591 papers), matching the
+// paper's Table 2.
 const FIG_DATA = {
-  human_hist: [11.75, 26.9, 30.11, 23.83, 7.4],
+  human_hist: [11.4586, 25.3444, 31.0956, 24.2510, 7.8504],
   models: {
     "all":       { hist: [0.92, 52.53, 36.0, 9.93, 0.62],
                     heatmap: [
