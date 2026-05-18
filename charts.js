@@ -37,7 +37,7 @@ const TREND_DATA = {
   opus: [
     { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.829, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 0.248, pred_mid: 3.831, pred_bot: 0.561 },
     { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.661, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 0.434, pred_mid: 4.197, pred_bot: 0.470 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.428, corr: 0.257, corr_lo: 0.225, corr_hi: 0.291, pred_top: 0.754, pred_mid: 10.260, pred_bot: 0.319 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.428, corr: 0.256, corr_lo: 0.225, corr_hi: 0.287, pred_top: 0.754, pred_mid: 10.260, pred_bot: 0.319 },
   ],
   gpt: [
     { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.929, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 0.334, pred_mid: 1.402, pred_bot: 0.525 },
