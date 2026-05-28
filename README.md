@@ -1,7 +1,7 @@
 # canaireview
 
 Living research project for **"Can AI Replace the Peer Reviewer?"** —
-Kalay, Schallheim, and Huang (2026).
+Huang, Kalay, and Schallheim (2026).
 
 This repo hosts the public-facing site at
 [dahuang-finance.github.io/canaireview](https://dahuang-finance.github.io/canaireview/)
