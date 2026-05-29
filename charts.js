@@ -35,14 +35,15 @@
 // cleaned_master_*.dta human reference, N=4,573 paper-reviewer scores).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.829, corr: 0.184, corr_lo: 0.150, corr_hi: 0.220, pred_top: 0.248, pred_mid: 3.831, pred_bot: 0.561 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.661, corr: 0.207, corr_lo: 0.172, corr_hi: 0.240, pred_top: 0.434, pred_mid: 4.197, pred_bot: 0.470 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.428, corr: 0.256, corr_lo: 0.225, corr_hi: 0.287, pred_top: 0.754, pred_mid: 10.260, pred_bot: 0.319 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.836, corr: 0.187, corr_lo: 0.155, corr_hi: 0.221, pred_top: 0.252, pred_mid: 3.945, pred_bot: 0.562 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.666, corr: 0.208, corr_lo: 0.175, corr_hi: 0.243, pred_top: 0.435, pred_mid: 4.458, pred_bot: 0.470 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.431, corr: 0.256, corr_lo: 0.223, corr_hi: 0.289, pred_top: 0.753, pred_mid: 10.618, pred_bot: 0.319 },
+    { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-22", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.624, pred_mid: 17.559, pred_bot: 0.277 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.929, corr: 0.110, corr_lo: 0.073, corr_hi: 0.145, pred_top: 0.334, pred_mid: 1.402, pred_bot: 0.525 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.746, corr: 0.162, corr_lo: 0.127, corr_hi: 0.196, pred_top: 0.035, pred_mid: 2.511, pred_bot: 0.966 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.461, corr: 0.176, corr_lo: 0.141, corr_hi: 0.209, pred_top: 0.215, pred_mid: 9.481, pred_bot: 0.409 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.341, pred_mid: 1.416, pred_bot: 0.707 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.751, corr: 0.166, corr_lo: 0.131, corr_hi: 0.201, pred_top: 0.034, pred_mid: 2.640, pred_bot: 0.966 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.466, corr: 0.176, corr_lo: 0.141, corr_hi: 0.212, pred_top: 0.215, pred_mid: 9.966, pred_bot: 0.409 },
   ],
 };
 
@@ -109,61 +110,69 @@ function easeOutCubic(t) {
 const FIG_DATA = {
   human_hist: [11.4586, 25.3444, 31.0956, 24.2510, 7.8504],
   models: {
-    "all":       { hist: [0.92, 52.53, 36.0, 9.93, 0.62],
+    "all":       { hist: [0.16, 48.24, 43.61, 7.78, 0.2],
                     heatmap: [
-                      [0.18, 5.60, 4.95, 1.04, 0.05],
-                      [0.30, 13.78, 10.78, 1.96, 0.07],
-                      [0.20, 18.69, 11.24, 1.97, 0.09],
-                      [0.18, 11.74, 7.74, 4.43, 0.30],
-                      [0.05, 2.66, 1.27, 0.49, 0.10],
+                      [0.07, 7.36, 4.15, 0.16, 0.02],
+                      [0.07, 15.04, 10.57, 1.19, 0.05],
+                      [0.05, 14.11, 13.74, 2.16, 0.05],
+                      [0.0, 8.84, 12.28, 2.69, 0.0],
+                      [0.0, 2.55, 3.26, 1.53, 0.07],
                     ] },
-    "opus-4.7":  { hist: [0.25, 21.27, 52.54, 24.10, 1.84],
+    "opus-4.8":  { hist: [0.21, 20.2, 47.91, 30.58, 1.11],
                     heatmap: [
-                      [0.04, 1.93, 6.74, 2.95, 0.21],
-                      [0.04, 5.94, 16.03, 5.90, 0.45],
-                      [0.04, 7.82, 17.44, 6.84, 0.45],
-                      [0.12, 4.96, 11.30, 7.71, 0.66],
-                      [0.04, 0.62, 1.03, 0.70, 0.08],
+                      [0.09, 3.77, 5.87, 1.96, 0.05],
+                      [0.09, 7.38, 13.11, 6.19, 0.14],
+                      [0.05, 5.07, 14.69, 10.07, 0.21],
+                      [0.0, 3.17, 11.12, 9.23, 0.32],
+                      [0.0, 0.8, 2.83, 3.36, 0.43],
                     ] },
-    "opus-4.6":  { hist: [1.02, 49.26, 40.25, 9.17, 0.29],
+    "opus-4.7":  { hist: [0.25, 21.39, 52.66, 23.98, 1.72],
                     heatmap: [
-                      [0.16, 5.86, 5.20, 0.61, 0.04],
-                      [0.41, 14.13, 11.75, 1.97, 0.04],
-                      [0.16, 19.01, 12.41, 1.27, 0.16],
-                      [0.20, 8.93, 9.42, 4.91, 0.04],
-                      [0.08, 1.31, 1.47, 0.41, 0.04],
+                      [0.09, 4.27, 6.0, 1.28, 0.14],
+                      [0.14, 7.6, 14.46, 4.36, 0.34],
+                      [0.05, 5.47, 16.47, 7.78, 0.34],
+                      [0.0, 3.06, 12.41, 7.76, 0.62],
+                      [0.0, 0.73, 3.47, 2.9, 0.3],
                     ] },
-    "opus-4.5":  { hist: [0.0, 66.82, 30.89, 2.21, 0.08],
+    "opus-4.6":  { hist: [1.02, 49.47, 40.25, 8.97, 0.29],
                     heatmap: [
-                      [0.0, 8.40, 3.36, 0.16, 0.0],
-                      [0.0, 17.74, 9.71, 0.66, 0.04],
-                      [0.0, 25.85, 7.95, 0.45, 0.0],
-                      [0.0, 12.33, 8.15, 0.86, 0.04],
-                      [0.0, 2.50, 1.72, 0.08, 0.0],
+                      [0.25, 7.43, 3.69, 0.34, 0.05],
+                      [0.34, 15.34, 9.82, 1.32, 0.09],
+                      [0.32, 14.45, 12.58, 2.71, 0.05],
+                      [0.16, 9.09, 11.39, 3.17, 0.0],
+                      [0.02, 2.6, 3.24, 1.44, 0.11],
                     ] },
-    "gpt-5.5":   { hist: [3.11, 46.95, 32.53, 16.67, 0.74],
+    "opus-4.5":  { hist: [0.0, 67.13, 30.74, 2.05, 0.08],
                     heatmap: [
-                      [0.61, 5.41, 4.18, 2.91, 0.00],
-                      [0.78, 12.91, 9.71, 6.15, 0.20],
-                      [0.86, 18.27, 10.94, 4.55, 0.20],
-                      [0.66, 9.10, 6.84, 2.62, 0.29],
-                      [0.20, 1.27, 0.86, 0.45, 0.04],
+                      [0.0, 9.42, 2.26, 0.07, 0.02],
+                      [0.0, 19.77, 6.91, 0.23, 0.02],
+                      [0.0, 20.18, 9.33, 0.55, 0.02],
+                      [0.0, 13.96, 9.28, 0.57, 0.0],
+                      [0.0, 3.6, 3.1, 0.71, 0.0],
                     ] },
-    "gpt-5.4":   { hist: [0.08, 59.07, 34.67, 5.85, 0.33],
+    "gpt-5.5":   { hist: [3.11, 47.25, 32.5, 16.52, 0.61],
                     heatmap: [
-                      [0.0, 7.12, 5.20, 0.66, 0.04],
-                      [0.0, 16.04, 12.07, 1.85, 0.08],
-                      [0.04, 21.71, 10.93, 1.27, 0.04],
-                      [0.0, 11.95, 5.61, 1.84, 0.16],
-                      [0.04, 2.25, 0.86, 0.20, 0.0],
+                      [0.78, 6.89, 2.78, 1.3, 0.02],
+                      [1.07, 14.44, 8.05, 3.24, 0.09],
+                      [0.82, 13.73, 10.45, 4.93, 0.18],
+                      [0.48, 9.4, 8.99, 4.84, 0.14],
+                      [0.16, 2.65, 2.21, 2.21, 0.16],
                     ] },
-    "gpt-5.1":   { hist: [1.07, 71.80, 25.12, 1.59, 0.43],
+    "gpt-5.4":   { hist: [0.08, 59.42, 34.56, 5.77, 0.16],
                     heatmap: [
-                      [0.34, 9.13, 2.36, 0.04, 0.04],
-                      [0.21, 19.46, 7.45, 0.30, 0.04],
-                      [0.30, 26.10, 6.04, 0.34, 0.13],
-                      [0.21, 14.36, 8.59, 0.69, 0.21],
-                      [0.04, 2.79, 0.69, 0.21, 0.04],
+                      [0.02, 8.3, 3.14, 0.3, 0.0],
+                      [0.02, 17.57, 8.14, 1.19, 0.0],
+                      [0.05, 17.82, 10.78, 1.41, 0.05],
+                      [0.0, 12.06, 10.07, 1.69, 0.0],
+                      [0.0, 3.42, 2.73, 1.19, 0.07],
+                    ] },
+    "gpt-5.1":   { hist: [1.07, 72.24, 25.05, 1.59, 0.04],
+                    heatmap: [
+                      [0.17, 9.31, 2.24, 0.07, 0.02],
+                      [0.38, 20.41, 6.03, 0.29, 0.0],
+                      [0.24, 21.7, 7.67, 0.36, 0.02],
+                      [0.29, 15.84, 7.19, 0.4, 0.0],
+                      [0.1, 4.62, 2.17, 0.5, 0.0],
                     ] },
   },
   // for histogram x-axis: scores 1..5
@@ -172,6 +181,7 @@ const FIG_DATA = {
 
 const MODEL_LABELS = {
   "all":      "All-model average",
+  "opus-4.8": "Anthropic Opus 4.8",
   "opus-4.7": "Anthropic Opus 4.7",
   "opus-4.6": "Anthropic Opus 4.6",
   "opus-4.5": "Anthropic Opus 4.5",
@@ -184,6 +194,7 @@ const MODEL_LABELS = {
 // specific model is locked. Single source of truth — update here when
 // a new frontier release is added or an existing model is re-run.
 const MODEL_RELEASE_DATES = {
+  "opus-4.8": "2026-05-22",
   "opus-4.7": "2026-04-16",
   "opus-4.6": "2026-02-05",
   "opus-4.5": "2025-11-24",
@@ -193,6 +204,7 @@ const MODEL_RELEASE_DATES = {
 };
 
 const MODEL_RUN_DATES = {
+  "opus-4.8": "2026-05-29",
   "opus-4.7": "2026-05-02",
   "opus-4.6": "2026-05-02",
   "opus-4.5": "2026-05-02",
@@ -346,17 +358,21 @@ const POINT_BASE = {
 };
 
 // ============================================================
-// X-axis: only Nov 2025 and Apr 2026 labeled
+// X-axis: only Nov 2025 and May 2026 labeled
 // ============================================================
+// Two anchor labels bracket the data: the first releases (Nov 2025)
+// and the latest (May 2026). Apr is left unlabeled because at the
+// trend charts' narrow width an "Apr 2026" label collides with the
+// adjacent "May 2026" one (the two releases are only ~5 weeks apart).
 
 const X_MIN = "2025-10-15";
-const X_MAX = "2026-05-15";
+const X_MAX = "2026-06-05";
 
-// Custom: only two labeled ticks, positioned at ~2/3 of each month so
+// Custom: only labeled ticks, positioned at ~2/3 of each month so
 // the labels sit visually close to where the data lives, not at the
 // month boundary.
 const TICK_NOV = new Date(2025, 10, 20).getTime();
-const TICK_APR = new Date(2026,  3, 20).getTime();
+const TICK_MAY = new Date(2026,  4, 20).getTime();
 
 const X_AXIS_TIME = {
   type: "time",
@@ -366,7 +382,7 @@ const X_AXIS_TIME = {
   afterBuildTicks: function (scale) {
     scale.ticks = [
       { value: TICK_NOV, major: true },
-      { value: TICK_APR, major: true },
+      { value: TICK_MAY, major: true },
     ];
   },
   ticks: {
@@ -376,7 +392,7 @@ const X_AXIS_TIME = {
     font: { size: 10 },
     callback: function (value) {
       if (value === TICK_NOV) return "Nov 2025";
-      if (value === TICK_APR) return "Apr 2026";
+      if (value === TICK_MAY) return "May 2026";
       return "";
     },
   },
@@ -2390,7 +2406,7 @@ function applyModelSelection(modelKey) {
   const blockTitle = document.getElementById("drilldown-title");
   if (blockTitle) {
     if (modelKey === "all") {
-      blockTitle.textContent = "Findings 1–3 · Look across all six models";
+      blockTitle.textContent = "Findings 1–3 · Look across all models";
     } else {
       const released = MODEL_RELEASE_DATES[modelKey];
       const run = MODEL_RUN_DATES[modelKey];
@@ -2409,7 +2425,7 @@ function applyModelSelection(modelKey) {
     ? "All-model average vs human reference"
     : `${label} vs human reference`;
   if (scatterSub) scatterSub.textContent = (modelKey === "all")
-    ? "Each paper scored by two humans and six AI models (averaged)"
+    ? "Each paper scored by two humans and all AI models (averaged)"
     : `Each paper scored by two humans and ${label}`;
 }
 
