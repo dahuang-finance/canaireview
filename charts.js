@@ -38,7 +38,7 @@ const TREND_DATA = {
     { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.836, corr: 0.187, corr_lo: 0.155, corr_hi: 0.221, pred_top: 0.252, pred_mid: 3.945, pred_bot: 0.562 },
     { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.666, corr: 0.208, corr_lo: 0.175, corr_hi: 0.243, pred_top: 0.435, pred_mid: 4.458, pred_bot: 0.470 },
     { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.431, corr: 0.256, corr_lo: 0.223, corr_hi: 0.289, pred_top: 0.753, pred_mid: 10.618, pred_bot: 0.319 },
-    { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-22", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.624, pred_mid: 17.559, pred_bot: 0.277 },
+    { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-28", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.624, pred_mid: 17.559, pred_bot: 0.277 },
   ],
   gpt: [
     { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.341, pred_mid: 1.416, pred_bot: 0.707 },
@@ -194,7 +194,7 @@ const MODEL_LABELS = {
 // specific model is locked. Single source of truth — update here when
 // a new frontier release is added or an existing model is re-run.
 const MODEL_RELEASE_DATES = {
-  "opus-4.8": "2026-05-22",
+  "opus-4.8": "2026-05-28",
   "opus-4.7": "2026-04-16",
   "opus-4.6": "2026-02-05",
   "opus-4.5": "2025-11-24",
@@ -204,7 +204,7 @@ const MODEL_RELEASE_DATES = {
 };
 
 const MODEL_RUN_DATES = {
-  "opus-4.8": "2026-05-29",
+  "opus-4.8": "2026-05-28",
   "opus-4.7": "2026-05-02",
   "opus-4.6": "2026-05-02",
   "opus-4.5": "2026-05-02",
