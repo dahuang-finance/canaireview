@@ -90,13 +90,13 @@
               and shows a single page at a time. To add findings, append a new
               .findings-page below the last one; never edit the pages above. To
               change which page shows first, edit data-default-date on
-              .findings-pages and nothing else. Pages need no "hidden"
-              attribute (JS manages visibility; before JS runs, the first page
-              shows).
+              .findings-pages (its value must match a page's data-date
+              exactly) and nothing else. Pages need no "hidden" attribute
+              (JS manages visibility; before JS runs, the first page shows).
             -->
-            <div class="findings-pages" data-default-date="May 11">
+            <div class="findings-pages" data-default-date="May 11, 2026">
 
-              <div class="findings-page" data-date="May 11" data-iso="2026-05-11">
+              <div class="findings-page" data-date="May 11, 2026" data-iso="2026-05-11">
             <ol>
               <li>
                 <p class="finding-lead">
@@ -202,7 +202,7 @@
             </ol>
               </div><!-- /.findings-page May 11 -->
 
-              <div class="findings-page" data-date="May 29" data-iso="2026-05-29">
+              <div class="findings-page" data-date="May 29, 2026" data-iso="2026-05-29">
                 <ol>
                   <li>
                     <p class="finding-lead">
