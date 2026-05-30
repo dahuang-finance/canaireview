@@ -447,11 +447,59 @@ h3 {
   margin: 0 0 1rem;
 }
 
-.findings .updated time {
-  background: var(--accent-soft);
-  padding: 0.2rem 0.5rem;
+/* Date-pill navigation for the paged findings. Each pill selects one
+   dated findings page. The selected pill carries the accent-soft fill
+   (the look the single date pill used to have); the others read as
+   muted, outlined affordances until hovered or selected. */
+.finding-pills {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: 0.4rem;
+  vertical-align: baseline;
+}
+.finding-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--rule);
   border-radius: 3px;
-  margin-left: 0.25rem;
+  padding: 0.2rem 0.5rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+.finding-pill:hover {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+}
+.finding-pill:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.finding-pill[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-soft);
+  font-weight: 700;
+}
+
+/* Paged findings visibility. Before JS runs, show the first page only
+   (graceful fallback). Once JS adds .js-ready, the [hidden] attribute it
+   sets on each page drives visibility. */
+.findings-pages > .findings-page:not(:first-child) {
+  display: none;
+}
+.findings-pages.js-ready > .findings-page {
+  display: block;
+}
+.findings-pages.js-ready > .findings-page[hidden] {
+  display: none;
 }
 
 .findings ol {
@@ -1219,6 +1267,7 @@ a:hover {
   }
   .skip-link,
   .finding-toggle,
+  .finding-pills,
   .info-trigger,
   .region-toggle-group,
   .model-picker,
@@ -1228,6 +1277,21 @@ a:hover {
   /* The findings details are hidden by default; expand them so the
      printed copy carries the prose, not just the headlines. */
   .finding-details[hidden] { display: block !important; }
+  /* Screen shows one dated page at a time; print every page, each
+     labeled by its date since the pills are dropped. */
+  .findings-page { display: block !important; }
+  .findings-page + .findings-page {
+    margin-top: 1.1rem;
+    padding-top: 0.9rem;
+    border-top: 1px dashed #bbb;
+  }
+  .findings-page::before {
+    content: "Updated on " attr(data-date);
+    display: block;
+    font-weight: 700;
+    font-size: 0.8rem;
+    margin-bottom: 0.4rem;
+  }
   .lede-findings-grid,
   .figures-grid,
   .figures-row {

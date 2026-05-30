@@ -2672,3 +2672,80 @@ window.addEventListener("resize", () => {
     positionSidebarIndicator(lockedSelection);
   }
 });
+
+// Paged, date-pill findings. The findings block holds one .findings-page
+// per dated update. We generate a pill per page (so the author never
+// maintains a pill list by hand), show the page named by
+// .findings-pages[data-default-date] first, and swap on click. Proper
+// tablist semantics: pills are role=tab, pages role=tabpanel, linked by
+// id. Adding a finding = appending a .findings-page; nothing here or in
+// the markup above needs editing.
+(function initFindingPages() {
+  const wrap = document.querySelector(".findings-pages");
+  const pillRow = document.querySelector(".finding-pills");
+  if (!wrap || !pillRow) return;
+  const pages = Array.from(wrap.querySelectorAll(":scope > .findings-page"));
+  if (!pages.length) return;
+
+  const defaultDate = wrap.getAttribute("data-default-date");
+  let current = pages.findIndex(
+    (p) => p.getAttribute("data-date") === defaultDate
+  );
+  if (current < 0) current = 0;
+
+  pillRow.setAttribute("role", "tablist");
+  pillRow.setAttribute("aria-label", "Findings by date");
+
+  const pills = pages.map((page, i) => {
+    const label = page.getAttribute("data-date") || "";
+    const iso = page.getAttribute("data-iso") || "";
+    if (!page.id) page.id = `findings-page-${i}`;
+    const tabId = `${page.id}-tab`;
+
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className = "finding-pill";
+    pill.id = tabId;
+    pill.setAttribute("role", "tab");
+    pill.setAttribute("aria-controls", page.id);
+    pill.innerHTML = iso ? `<time datetime="${iso}">${label}</time>` : label;
+    pill.addEventListener("click", () => select(i, false));
+
+    page.setAttribute("role", "tabpanel");
+    page.setAttribute("aria-labelledby", tabId);
+    page.setAttribute("tabindex", "0");
+
+    pillRow.appendChild(pill);
+    return pill;
+  });
+
+  function select(idx, focus) {
+    current = idx;
+    pages.forEach((page, i) => {
+      const on = i === idx;
+      page.hidden = !on;
+      pills[i].setAttribute("aria-selected", String(on));
+      pills[i].tabIndex = on ? 0 : -1;
+    });
+    if (focus) pills[idx].focus();
+    // Lead tools were measured while their page was hidden (zero-size
+    // rects), so re-run the positioner for the now-visible page.
+    positionAllLeadTools();
+  }
+
+  pillRow.addEventListener("keydown", (e) => {
+    let next = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown")
+      next = (current + 1) % pills.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp")
+      next = (current - 1 + pills.length) % pills.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = pills.length - 1;
+    if (next === null) return;
+    e.preventDefault();
+    select(next, true);
+  });
+
+  wrap.classList.add("js-ready");
+  select(current, false);
+})();

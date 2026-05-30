@@ -79,8 +79,24 @@
 
           <article class="entry latest">
             <p class="updated">
-              Updated on <time datetime="2026-05-29">May 29, 2026</time>
+              Updated on
+              <span class="finding-pills"></span>
             </p>
+
+            <!--
+              Idempotent, append-only findings. Each dated update is one
+              <div class="findings-page" data-date="..." data-iso="...">. JS
+              builds one date pill per page (no manual pill list to maintain)
+              and shows a single page at a time. To add findings, append a new
+              .findings-page below the last one; never edit the pages above. To
+              change which page shows first, edit data-default-date on
+              .findings-pages and nothing else. Pages need no "hidden"
+              attribute (JS manages visibility; before JS runs, the first page
+              shows).
+            -->
+            <div class="findings-pages" data-default-date="May 11">
+
+              <div class="findings-page" data-date="May 11" data-iso="2026-05-11">
             <ol>
               <li>
                 <p class="finding-lead">
@@ -184,13 +200,20 @@
                 </div>
               </li>
             </ol>
-          </article>
+              </div><!-- /.findings-page May 11 -->
 
-          <!--
-            When the next generation of frontier models lands, paste a new
-            <article class="entry"> block ABOVE this one, then change this
-            previous entry's class from "entry latest" to "entry".
-          -->
+              <div class="findings-page" data-date="May 29" data-iso="2026-05-29">
+                <ol>
+                  <li>
+                    <p class="finding-lead">
+                      <span class="finding-claim">Opus 4.8 shows little to no improvement compared to Opus 4.7.</span>
+                    </p>
+                  </li>
+                </ol>
+              </div><!-- /.findings-page May 29 -->
+
+            </div><!-- /.findings-pages -->
+          </article>
         </section>
     </div><!-- /lede-findings-grid -->
 
