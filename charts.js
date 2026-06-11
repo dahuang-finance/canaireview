@@ -378,7 +378,7 @@ const POINT_BASE = {
 // adjacent "May 2026" one (the two releases are only ~5 weeks apart).
 
 const X_MIN = "2025-10-15";
-const X_MAX = "2026-06-05";
+const X_MAX = "2026-07-05";
 
 // Custom: only labeled ticks, positioned at ~2/3 of each month so
 // the labels sit visually close to where the data lives, not at the
@@ -966,7 +966,9 @@ let currentSelection = "all";
 
 function vendorOfKey(key) {
   if (!key || key === "all") return null;
-  return key.startsWith("opus") ? "opus" : "gpt";
+  // "opus" here means the Anthropic lineage; Fable (Mythos-class) joins it.
+  return (key.startsWith("opus") || key.startsWith("fable") || key.startsWith("mythos"))
+    ? "opus" : "gpt";
 }
 
 // In-flight requestAnimationFrame ids — one per chart for the h2h set,
@@ -1168,7 +1170,7 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
     data: {
       datasets: [
         {
-          label: "Anthropic Opus",
+          label: "Anthropic",
           data: pointsFor("opus", metric),
           borderColor: COLORS.opus,
           pointStyle: SHAPES.opus,
@@ -1177,7 +1179,7 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
           order: 3,
         },
         {
-          label: "OpenAI GPT",
+          label: "OpenAI",
           data: pointsFor("gpt", metric),
           borderColor: COLORS.gpt,
           pointStyle: SHAPES.gpt,
@@ -1209,11 +1211,11 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
             // than rects at the same boxWidth. Using image-based
             // pointStyle bypasses that math.
             generateLabels: (chart) => [
-              { text: "Anthropic Opus",
+              { text: "Anthropic",
                 pointStyle: OPUS_LEGEND_MARKER,
                 hidden: !chart.isDatasetVisible(0),
                 datasetIndex: 0 },
-              { text: "OpenAI GPT",
+              { text: "OpenAI",
                 pointStyle: GPT_LEGEND_MARKER,
                 hidden: !chart.isDatasetVisible(1),
                 datasetIndex: 1 },
@@ -1246,7 +1248,7 @@ const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
 function predDataset(vendor, region) {
   const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
   return {
-    label: vendor === "opus" ? "Anthropic Opus" : "OpenAI GPT",
+    label: vendor === "opus" ? "Anthropic" : "OpenAI",
     data: predDataFor(vendor, region),
     borderColor: base,
     borderDash: [],
@@ -1297,11 +1299,11 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
           // middle) is no longer encoded here — the picker under the
           // title controls which region is shown.
           generateLabels: (chart) => [
-            { text: "Anthropic Opus",
+            { text: "Anthropic",
               pointStyle: OPUS_LEGEND_MARKER,
               hidden: !chart.isDatasetVisible(0),
               datasetIndex: 0 },
-            { text: "OpenAI GPT",
+            { text: "OpenAI",
               pointStyle: GPT_LEGEND_MARKER,
               hidden: !chart.isDatasetVisible(1),
               datasetIndex: 1 },
@@ -2308,8 +2310,11 @@ window.addEventListener("resize", () => {
 // ============================================================
 
 function vendorOf(modelKey) {
-  if (modelKey.startsWith("opus")) return "opus";
-  if (modelKey.startsWith("gpt"))  return "gpt";
+  // "opus" = the Anthropic lineage; Fable (Mythos-class) joins it.
+  if (modelKey.startsWith("opus"))   return "opus";
+  if (modelKey.startsWith("fable"))  return "opus";
+  if (modelKey.startsWith("mythos")) return "opus";
+  if (modelKey.startsWith("gpt"))    return "gpt";
   return null;
 }
 
