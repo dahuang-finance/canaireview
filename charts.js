@@ -2785,3 +2785,44 @@ window.addEventListener("resize", () => {
   wrap.classList.add("js-ready");
   select(current, false);
 })();
+
+// ============================================================
+// Findings / Release-log tabs (one-block design, 2026-07-10).
+// The two h2-style header labels switch the visible panel in a
+// single slot, so the lede/findings grid keeps its balance (the
+// earlier stacked release log left a large blank space in the
+// lede column). Proper tablist semantics; arrow keys supported.
+(function initFindingsTabs() {
+  const tabs = Array.from(document.querySelectorAll(".findings-tab"));
+  if (!tabs.length) return;
+  const panels = tabs.map((t) =>
+    document.getElementById(t.getAttribute("aria-controls"))
+  );
+
+  function select(idx, focus) {
+    tabs.forEach((tab, i) => {
+      const on = i === idx;
+      tab.setAttribute("aria-selected", String(on));
+      tab.tabIndex = on ? 0 : -1;
+      if (panels[i]) panels[i].hidden = !on;
+    });
+    if (focus) tabs[idx].focus();
+    // Lead tools measured while hidden have zero-size rects; re-run
+    // the positioner for whichever panel is now visible.
+    if (typeof positionAllLeadTools === "function") positionAllLeadTools();
+  }
+
+  tabs.forEach((tab, i) => tab.addEventListener("click", () => select(i, false)));
+
+  document.querySelector(".findings-tabs").addEventListener("keydown", (e) => {
+    const cur = tabs.findIndex((t) => t.getAttribute("aria-selected") === "true");
+    let next = null;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") next = (cur + 1) % tabs.length;
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") next = (cur - 1 + tabs.length) % tabs.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabs.length - 1;
+    if (next === null) return;
+    e.preventDefault();
+    select(next, true);
+  });
+})();

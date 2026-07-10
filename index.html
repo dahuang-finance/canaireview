@@ -74,21 +74,24 @@
     </section>
 
         <section class="findings">
-          <h2>Findings</h2>
+          <!--
+            Tabbed one-block design (2026-07-10). The two header labels are
+            tabs sharing one slot: FINDINGS (the four frozen core claims —
+            never edit them) and RELEASE LOG (append-only; every new frontier
+            release is rerun through the same pipeline and added as one dated
+            .log-entry at the TOP of .log-entries, newest first; never edit
+            existing entries). The switcher lives in charts.js
+            (initFindingsTabs).
+          -->
+          <div class="findings-tabs" role="tablist" aria-label="Findings and release log">
+            <button class="findings-tab" id="tab-findings" role="tab" aria-selected="true" aria-controls="panel-findings" type="button">Findings</button>
+            <button class="findings-tab" id="tab-log" role="tab" aria-selected="false" aria-controls="panel-log" tabindex="-1" type="button">Release log</button>
+          </div>
 
-          <article class="entry latest">
+          <article class="entry latest" id="panel-findings" role="tabpanel" aria-labelledby="tab-findings" tabindex="0">
             <p class="updated">
               Core findings &middot; established <time datetime="2026-05-11">May 11, 2026</time> on the six-model baseline &middot; frozen
             </p>
-
-            <!--
-              Two-block design (2026-07-10). Block 1: the four core findings
-              below are FROZEN — never edit them. Block 2: the release log
-              section that follows is append-only; every new frontier release
-              is rerun through the same pipeline and added as one dated
-              .log-entry at the TOP of .log-entries (newest first). Never edit
-              existing log entries.
-            -->
             <ol>
               <li>
                 <p class="finding-lead">
@@ -194,8 +197,7 @@
             </ol>
           </article>
 
-          <section class="release-log">
-            <h2>Release log</h2>
+          <div class="release-log" id="panel-log" role="tabpanel" aria-labelledby="tab-log" tabindex="0" hidden>
             <p class="release-log-note">
               Each new frontier release is rerun through the same pipeline
               &mdash; same papers, same locked prompt &mdash; and appended
@@ -223,7 +225,7 @@
                 <p class="log-claim">Core findings 1&ndash;4 published on the six-model baseline: Opus 4.5&ndash;4.7 and GPT&#8209;5.1&ndash;5.5, 2,591 papers, four metric lenses.</p>
               </li>
             </ul>
-          </section>
+          </div>
         </section>
     </div><!-- /lede-findings-grid -->
 
