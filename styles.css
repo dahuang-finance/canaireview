@@ -1396,6 +1396,11 @@ a:hover {
   font-weight: 700;
   margin-left: 0.75rem;
 }
+.log-meta .log-released {
+  color: #666;
+  font-weight: 400;
+  margin-left: 0.75rem;
+}
 .log-claim,
 .log-claims li {
   margin: 0;
