@@ -20,7 +20,7 @@
 // output on raw 2-reviewer sample (no pure-fit comment classifier
 // applied — consistent with the website's "no written comment" claim).
 // n ranges from 1,799 to 1,946 papers depending on the model.
-// Release dates verified via vendor announcements (Nov 2025 - Apr 2026).
+// Release dates verified via vendor announcements (Nov 2025 - Jul 2026).
 // pred_top, pred_mid = |β_H|/|β_AI| in the top-tail and middle score
 // regions, computed from each model's Poisson PML citation regression.
 // Top values > 1 (humans dominate top tail). Middle values < 1 (AI
@@ -382,21 +382,21 @@ const POINT_BASE = {
 };
 
 // ============================================================
-// X-axis: only Nov 2025 and May 2026 labeled
+// X-axis: only Nov 2025 and Jul 2026 labeled
 // ============================================================
 // Two anchor labels bracket the data: the first releases (Nov 2025)
-// and the latest (May 2026). Apr is left unlabeled because at the
-// trend charts' narrow width an "Apr 2026" label collides with the
-// adjacent "May 2026" one (the two releases are only ~5 weeks apart).
+// and the latest (Jul 2026). Intermediate months are left unlabeled
+// because at the trend charts' narrow width adjacent month labels
+// collide (several releases are only ~5 weeks apart).
 
 const X_MIN = "2025-10-15";
-const X_MAX = "2026-07-05";
+const X_MAX = "2026-07-24";
 
 // Custom: only labeled ticks, positioned at ~2/3 of each month so
 // the labels sit visually close to where the data lives, not at the
 // month boundary.
 const TICK_NOV = new Date(2025, 10, 20).getTime();
-const TICK_MAY = new Date(2026,  4, 20).getTime();
+const TICK_JUL = new Date(2026,  6, 10).getTime();
 
 const X_AXIS_TIME = {
   type: "time",
@@ -406,7 +406,7 @@ const X_AXIS_TIME = {
   afterBuildTicks: function (scale) {
     scale.ticks = [
       { value: TICK_NOV, major: true },
-      { value: TICK_MAY, major: true },
+      { value: TICK_JUL, major: true },
     ];
   },
   ticks: {
@@ -416,7 +416,7 @@ const X_AXIS_TIME = {
     font: { size: 10 },
     callback: function (value) {
       if (value === TICK_NOV) return "Nov 2025";
-      if (value === TICK_MAY) return "May 2026";
+      if (value === TICK_JUL) return "Jul 2026";
       return "";
     },
   },
