@@ -78,24 +78,17 @@
 
           <article class="entry latest">
             <p class="updated">
-              Updated on
-              <span class="finding-pills"></span>
+              Core findings &middot; established <time datetime="2026-05-11">May 11, 2026</time> on the six-model baseline &middot; frozen
             </p>
 
             <!--
-              Idempotent, append-only findings. Each dated update is one
-              <div class="findings-page" data-date="..." data-iso="...">. JS
-              builds one date pill per page (no manual pill list to maintain)
-              and shows a single page at a time. To add findings, append a new
-              .findings-page below the last one; never edit the pages above. To
-              change which page shows first, edit data-default-date on
-              .findings-pages (its value must match a page's data-date
-              exactly) and nothing else. Pages need no "hidden" attribute
-              (JS manages visibility; before JS runs, the first page shows).
+              Two-block design (2026-07-10). Block 1: the four core findings
+              below are FROZEN — never edit them. Block 2: the release log
+              section that follows is append-only; every new frontier release
+              is rerun through the same pipeline and added as one dated
+              .log-entry at the TOP of .log-entries (newest first). Never edit
+              existing log entries.
             -->
-            <div class="findings-pages" data-default-date="May 11, 2026">
-
-              <div class="findings-page" data-date="May 11, 2026" data-iso="2026-05-11">
             <ol>
               <li>
                 <p class="finding-lead">
@@ -199,50 +192,38 @@
                 </div>
               </li>
             </ol>
-              </div><!-- /.findings-page May 11 -->
-
-              <div class="findings-page" data-date="May 29, 2026" data-iso="2026-05-29">
-                <ol>
-                  <li>
-                    <p class="finding-lead">
-                      <span class="finding-claim">Opus 4.8 shows little to no improvement compared to Opus 4.7.</span>
-                    </p>
-                  </li>
-                </ol>
-              </div><!-- /.findings-page May 29 -->
-
-              <div class="findings-page" data-date="June 11, 2026" data-iso="2026-06-11">
-                <ol>
-                  <li>
-                    <p class="finding-lead">
-                      <span class="finding-claim">Fable 5 is the closest model yet to the human score distribution, breaking Opus 4.8's plateau.</span>
-                    </p>
-                  </li>
-                  <li>
-                    <p class="finding-lead">
-                      <span class="finding-claim">Fable 5 agrees with a human reviewer clearly more than two human reviewers agree with each other.</span>
-                    </p>
-                  </li>
-                  <li>
-                    <p class="finding-lead">
-                      <span class="finding-claim">Humans still hold the tails, where accept/reject decisions hinge; Fable 5's middle-region predictive edge is the largest yet.</span>
-                    </p>
-                  </li>
-                </ol>
-              </div><!-- /.findings-page June 11 -->
-
-              <div class="findings-page" data-date="July 10, 2026" data-iso="2026-07-10">
-                <ol>
-                  <li>
-                    <p class="finding-lead">
-                      <span class="finding-claim">GPT-5.6 Sol is the first model to err on the harsh side, parking nearly half of all papers at a 4; it ends OpenAI's steady march toward the human score distribution, and humans keep their edge in the tails.</span>
-                    </p>
-                  </li>
-                </ol>
-              </div><!-- /.findings-page July 10 -->
-
-            </div><!-- /.findings-pages -->
           </article>
+
+          <section class="release-log">
+            <h2>Release log</h2>
+            <p class="release-log-note">
+              Each new frontier release is rerun through the same pipeline
+              &mdash; same papers, same locked prompt &mdash; and appended
+              here.
+            </p>
+            <ul class="log-entries">
+              <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-07-10">July 10, 2026</time><span class="log-model">OpenAI GPT&#8209;5.6 Sol</span></p>
+                <p class="log-claim">GPT-5.6 Sol is the first model to err on the harsh side, parking nearly half of all papers at a 4; it ends OpenAI's steady march toward the human score distribution, and humans keep their edge in the tails.</p>
+              </li>
+              <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-06-11">June 11, 2026</time><span class="log-model">Anthropic Fable 5</span></p>
+                <ul class="log-claims">
+                  <li>Fable 5 is the closest model yet to the human score distribution, breaking Opus 4.8's plateau.</li>
+                  <li>Fable 5 agrees with a human reviewer clearly more than two human reviewers agree with each other.</li>
+                  <li>Humans still hold the tails, where accept/reject decisions hinge; Fable 5's middle-region predictive edge is the largest yet.</li>
+                </ul>
+              </li>
+              <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-05-29">May 29, 2026</time><span class="log-model">Anthropic Opus 4.8</span></p>
+                <p class="log-claim">Opus 4.8 shows little to no improvement compared to Opus 4.7.</p>
+              </li>
+              <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-05-11">May 11, 2026</time><span class="log-model">Study launch</span></p>
+                <p class="log-claim">Core findings 1&ndash;4 published on the six-model baseline: Opus 4.5&ndash;4.7 and GPT&#8209;5.1&ndash;5.5, 2,591 papers, four metric lenses.</p>
+              </li>
+            </ul>
+          </section>
         </section>
     </div><!-- /lede-findings-grid -->
 

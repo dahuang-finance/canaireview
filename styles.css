@@ -1302,3 +1302,54 @@ a:hover {
   .fig-chart { break-inside: avoid; }
   /* Inline link colors / underlines read fine; do nothing on those. */
 }
+
+/* ============================================================
+   Release log (two-block findings design, 2026-07-10).
+   Block 1: the core findings stay frozen above. Block 2: each new
+   frontier release appends one dated row here, newest first. */
+.release-log {
+  margin-top: 2.4rem;
+}
+.release-log-note {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0.2rem 0 0.6rem;
+}
+.log-entries {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.log-entry {
+  padding: 0.85rem 0;
+  border-top: 1px dashed var(--rule-soft);
+}
+.log-entry:first-child {
+  border-top: none;
+  padding-top: 0.4rem;
+}
+.log-meta {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #666;
+}
+.log-meta .log-model {
+  color: #1a1a1a;
+  font-weight: 700;
+  margin-left: 0.75rem;
+}
+.log-claim,
+.log-claims li {
+  margin: 0;
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+.log-claims {
+  margin: 0;
+  padding-left: 1.1rem;
+}
+.log-claims li + li {
+  margin-top: 0.35rem;
+}

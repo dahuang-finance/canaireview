@@ -2702,6 +2702,13 @@ window.addEventListener("resize", () => {
   }
 });
 
+// DEAD CODE — CURRENTLY UNUSED (kept as fallback). The date-pill pager
+// below drove the findings block until 2026-07-10, when the findings
+// section moved to a two-block design (frozen core findings + an
+// append-only release log in plain markup, no JS). The function guards
+// on the old markup and no-ops when absent. Restore the .findings-pages
+// / .finding-pills markup to reactivate.
+//
 // Paged, date-pill findings. The findings block holds one .findings-page
 // per dated update. We generate a pill per page (so the author never
 // maintains a pill list by hand), show the page named by
