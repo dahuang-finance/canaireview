@@ -35,17 +35,17 @@
 // cleaned_master_*.dta human reference, N=4,573 paper-reviewer scores).
 const TREND_DATA = {
   opus: [
-    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.836, corr: 0.187, corr_lo: 0.155, corr_hi: 0.221, pred_top: 0.252, pred_mid: 3.945, pred_bot: 0.562 },
-    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.666, corr: 0.208, corr_lo: 0.175, corr_hi: 0.243, pred_top: 0.435, pred_mid: 4.458, pred_bot: 0.470 },
-    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.431, corr: 0.256, corr_lo: 0.223, corr_hi: 0.289, pred_top: 0.753, pred_mid: 10.618, pred_bot: 0.319 },
-    { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-28", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.624, pred_mid: 17.559, pred_bot: 0.277 },
-    { key: "fable-5",  name: "Fable 5",  date: "2026-06-09", l1: 0.327, corr: 0.291, corr_lo: 0.257, corr_hi: 0.322, pred_top: 0.554, pred_mid: 28.512, pred_bot: 0.781 },
+    { key: "opus-4.5", name: "Opus 4.5", date: "2025-11-24", l1: 0.836, corr: 0.187, corr_lo: 0.155, corr_hi: 0.221, pred_top: 0.244, pred_mid: 4.051, pred_bot: 0.548 },
+    { key: "opus-4.6", name: "Opus 4.6", date: "2026-02-05", l1: 0.666, corr: 0.208, corr_lo: 0.175, corr_hi: 0.243, pred_top: 0.441, pred_mid: 4.634, pred_bot: 0.462 },
+    { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.431, corr: 0.256, corr_lo: 0.223, corr_hi: 0.289, pred_top: 0.740, pred_mid: 11.579, pred_bot: 0.300 },
+    { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-28", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.623, pred_mid: 20.794, pred_bot: 0.276 },
+    { key: "fable-5",  name: "Fable 5",  date: "2026-06-09", l1: 0.327, corr: 0.291, corr_lo: 0.257, corr_hi: 0.322, pred_top: 0.549, pred_mid: 24.277, pred_bot: 0.758 },
   ],
   gpt: [
-    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.341, pred_mid: 1.416, pred_bot: 0.707 },
-    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.751, corr: 0.166, corr_lo: 0.131, corr_hi: 0.201, pred_top: 0.034, pred_mid: 2.640, pred_bot: 0.966 },
-    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.466, corr: 0.176, corr_lo: 0.141, corr_hi: 0.212, pred_top: 0.215, pred_mid: 9.966, pred_bot: 0.409 },
-    { key: "gpt-5.6-sol",  name: "GPT-5.6 Sol",  date: "2026-07-09", l1: 0.497, corr: 0.172, corr_lo: 0.138, corr_hi: 0.206, pred_top: 0.300, pred_mid: 19.028, pred_bot: 0.376 },
+    { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.339, pred_mid: 1.452, pred_bot: 0.693 },
+    { key: "gpt-5.4",  name: "GPT-5.4",  date: "2026-03-05", l1: 0.751, corr: 0.166, corr_lo: 0.131, corr_hi: 0.201, pred_top: 0.041, pred_mid: 2.689, pred_bot: 0.943 },
+    { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.466, corr: 0.176, corr_lo: 0.141, corr_hi: 0.212, pred_top: 0.220, pred_mid: 10.480, pred_bot: 0.406 },
+    { key: "gpt-5.6-sol",  name: "GPT-5.6 Sol",  date: "2026-07-09", l1: 0.497, corr: 0.172, corr_lo: 0.138, corr_hi: 0.206, pred_top: 0.300, pred_mid: 21.529, pred_bot: 0.373 },
   ],
 };
 
