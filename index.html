@@ -205,6 +205,14 @@
             </p>
             <ul class="log-entries">
               <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-09-06">September 6, 2026</time><span class="log-model">Anthropic Fable&nbsp;5.1</span><span class="log-released">released September 1, 2026</span></p>
+                <ul class="log-claims">
+                  <li>Fable 5.1 reverses Fable 5's move toward the human score distribution. It scores harshly and narrowly, with 82% of papers at a 3 or 4 and under 1% at the top score, the widest distance from the human distribution of any Anthropic release since Opus 4.6.</li>
+                  <li>Agreement with a single human reviewer is r = 0.27, down slightly from Fable 5's 0.29 and still above the human-human benchmark.</li>
+                  <li>The tail-versus-middle pattern holds, with humans ahead in both tails and AI ahead in the middle.</li>
+                </ul>
+              </li>
+              <li class="log-entry">
                 <p class="log-meta"><time datetime="2026-07-10">July 10, 2026</time><span class="log-model">OpenAI GPT&#8209;5.6 Sol</span><span class="log-released">released July 9, 2026</span></p>
                 <p class="log-claim">GPT-5.6 Sol is the first model to err on the harsh side, parking nearly half of all papers at a 4; it ends OpenAI's steady march toward the human score distribution, and humans keep their edge in the tails.</p>
               </li>
@@ -246,6 +254,7 @@
           <label for="model-select">Model:</label>
           <select id="model-select" class="model-select">
             <option value="all" selected>All-model average</option>
+            <option value="fable-5.1">Anthropic Fable 5.1</option>
             <option value="fable-5">Anthropic Fable 5</option>
             <option value="opus-4.8">Anthropic Opus 4.8</option>
             <option value="opus-4.7">Anthropic Opus 4.7</option>
@@ -348,6 +357,7 @@
           <label for="model-select-2">Model:</label>
           <select id="model-select-2" class="model-select">
             <option value="all" selected>All-model average</option>
+            <option value="fable-5.1">Anthropic Fable 5.1</option>
             <option value="fable-5">Anthropic Fable 5</option>
             <option value="opus-4.8">Anthropic Opus 4.8</option>
             <option value="opus-4.7">Anthropic Opus 4.7</option>
@@ -438,6 +448,7 @@
         <h3>Models<br>covered</h3>
         <ul class="models-side-list">
           <span class="model-row-indicator" aria-hidden="true"></span>
+          <li class="model-row" data-model="fable-5.1"><span class="model">Fable 5.1</span></li>
           <li class="model-row" data-model="fable-5"><span class="model">Fable 5</span></li>
           <li class="model-row" data-model="opus-4.8"><span class="model">Opus 4.8</span></li>
           <li class="model-row" data-model="opus-4.7"><span class="model">Opus 4.7</span></li>

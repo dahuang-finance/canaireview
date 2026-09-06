@@ -40,6 +40,7 @@ const TREND_DATA = {
     { key: "opus-4.7", name: "Opus 4.7", date: "2026-04-16", l1: 0.431, corr: 0.256, corr_lo: 0.223, corr_hi: 0.289, pred_top: 0.740, pred_mid: 11.579, pred_bot: 0.300 },
     { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-28", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.623, pred_mid: 20.794, pred_bot: 0.276 },
     { key: "fable-5",  name: "Fable 5",  date: "2026-06-09", l1: 0.327, corr: 0.291, corr_lo: 0.257, corr_hi: 0.322, pred_top: 0.549, pred_mid: 24.277, pred_bot: 0.758 },
+    { key: "fable-5.1",  name: "Fable 5.1",  date: "2026-09-01", l1: 0.531, corr: 0.269, corr_lo: 0.236, corr_hi: 0.301, pred_top: 0.825, pred_mid: 9.756, pred_bot: 0.643 },
   ],
   gpt: [
     { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.339, pred_mid: 1.452, pred_bot: 0.693 },
@@ -112,13 +113,13 @@ function easeOutCubic(t) {
 const FIG_DATA = {
   human_hist: [11.4586, 25.3444, 31.0956, 24.2510, 7.8504],
   models: {
-    "all":  { hist: [0.25, 39.04, 49.08, 11.22, 0.41],
+    "all":  { hist: [0.2, 32.36, 52.19, 14.71, 0.53],
                     heatmap: [
-                      [0.13, 6.64, 4.42, 0.49, 0.03],
-                      [0.13, 12.14, 11.45, 1.77, 0.08],
-                      [0.05, 11.42, 16.46, 3.34, 0.08],
-                      [0.0, 6.92, 13.14, 3.88, 0.03],
-                      [0.0, 1.77, 3.7, 1.77, 0.15],
+                      [0.08, 5.89, 5.04, 0.67, 0.03],
+                      [0.08, 10.49, 12.4, 2.49, 0.1],
+                      [0.05, 8.92, 17.59, 4.68, 0.1],
+                      [0.0, 5.17, 13.86, 4.89, 0.05],
+                      [0.0, 1.41, 3.68, 2.08, 0.23],
                     ] },
     "fable-5":   { hist: [4.68, 39.68, 33.03, 20.64, 1.97],
                     heatmap: [
@@ -127,6 +128,14 @@ const FIG_DATA = {
                       [0.84, 11.48, 10.73, 6.64, 0.37],
                       [0.66, 6.94, 8.84, 6.71, 0.68],
                       [0.16, 1.64, 2.28, 2.69, 0.64],
+                    ] },
+    "fable-5.1":  { hist: [0.9, 14.63, 39.44, 42.48, 2.55],
+                    heatmap: [
+                      [0.34, 2.96, 5.49, 2.86, 0.08],
+                      [0.31, 5.54, 11.06, 8.32, 0.34],
+                      [0.21, 3.63, 12.4, 14.56, 0.57],
+                      [0.15, 2.16, 8.02, 12.68, 0.93],
+                      [0.03, 0.49, 2.11, 3.94, 0.82],
                     ] },
     "opus-4.8":  { hist: [0.21, 20.2, 47.91, 30.58, 1.11],
                     heatmap: [
@@ -199,6 +208,7 @@ const FIG_DATA = {
 
 const MODEL_LABELS = {
   "all":      "All-model average",
+  "fable-5.1": "Anthropic Fable 5.1",
   "fable-5":  "Anthropic Fable 5",
   "opus-4.8": "Anthropic Opus 4.8",
   "opus-4.7": "Anthropic Opus 4.7",
@@ -214,6 +224,7 @@ const MODEL_LABELS = {
 // specific model is locked. Single source of truth — update here when
 // a new frontier release is added or an existing model is re-run.
 const MODEL_RELEASE_DATES = {
+  "fable-5.1": "2026-09-01",
   "fable-5":  "2026-06-09",
   "opus-4.8": "2026-05-28",
   "opus-4.7": "2026-04-16",
@@ -226,6 +237,7 @@ const MODEL_RELEASE_DATES = {
 };
 
 const MODEL_RUN_DATES = {
+  "fable-5.1": "2026-09-06",
   "fable-5":  "2026-06-11",
   "opus-4.8": "2026-05-28",
   "opus-4.7": "2026-05-02",
@@ -382,21 +394,21 @@ const POINT_BASE = {
 };
 
 // ============================================================
-// X-axis: only Nov 2025 and Jul 2026 labeled
+// X-axis: only Nov 2025 and Sep 2026 labeled
 // ============================================================
 // Two anchor labels bracket the data: the first releases (Nov 2025)
-// and the latest (Jul 2026). Intermediate months are left unlabeled
+// and the latest (Sep 2026). Intermediate months are left unlabeled
 // because at the trend charts' narrow width adjacent month labels
 // collide (several releases are only ~5 weeks apart).
 
 const X_MIN = "2025-10-15";
-const X_MAX = "2026-07-24";
+const X_MAX = "2026-09-20";
 
 // Custom: only labeled ticks, positioned at ~2/3 of each month so
 // the labels sit visually close to where the data lives, not at the
 // month boundary.
 const TICK_NOV = new Date(2025, 10, 20).getTime();
-const TICK_JUL = new Date(2026,  6, 10).getTime();
+const TICK_JUL = new Date(2026,  8, 5).getTime();  // relabeled Sep 2026 (Fable 5.1, 2026-09-01)
 
 const X_AXIS_TIME = {
   type: "time",
@@ -416,7 +428,7 @@ const X_AXIS_TIME = {
     font: { size: 10 },
     callback: function (value) {
       if (value === TICK_NOV) return "Nov 2025";
-      if (value === TICK_JUL) return "Jul 2026";
+      if (value === TICK_JUL) return "Sep 2026";
       return "";
     },
   },
