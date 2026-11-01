@@ -1659,10 +1659,10 @@ const HUMAN_REF_WIDTH = 2.0;
 const HUMAN_LABEL_COLOR = "#1f1f1f";
 const HUMAN_LABEL_FONT = "600 10.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
 
-// Ink for the part of a human-reference label that sits over an AI bar:
-// white or HUMAN_LABEL_COLOR, whichever has the higher WCAG contrast
-// against the bar's fill (white on the terracotta and blue bars, dark on
-// the teal-green and gray ones). A translucent fill is blended over white.
+// Ink for a human-reference label drawn on top of an AI bar: white when it
+// has at least 3:1 WCAG contrast with the bar's fill (terracotta 4.5,
+// blue 6.5, teal-green 3.5), HUMAN_LABEL_COLOR otherwise (the gray
+// all-model bars, 2.8). A translucent fill is blended over white.
 function labelInkOver(fill) {
   let r, g, b, a = 1;
   const s = String(fill || "").trim();
@@ -1682,8 +1682,7 @@ function labelInkOver(fill) {
     return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
   };
   const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  const L_INK = 0.0137;  // relative luminance of HUMAN_LABEL_COLOR (#1f1f1f)
-  return 1.05 / (L + 0.05) >= (L + 0.05) / (L_INK + 0.05) ? "#ffffff" : HUMAN_LABEL_COLOR;
+  return 1.05 / (L + 0.05) >= 3 ? "#ffffff" : HUMAN_LABEL_COLOR;
 }
 
 // Custom Chart.js plugin: draws a horizontal rule across each AI bar
@@ -1727,34 +1726,26 @@ const humanRefPlugin = {
 
       // Label tucked above the line, with no background box: a box hid the
       // top of any AI bar that reached past the line and made the bar look
-      // shorter than it is (fixed 2026-11-01). The text is drawn twice
-      // under two clips, so the part over the bar takes the ink that
-      // contrasts with the bar and the rest keeps the usual label color.
+      // shorter than it is (fixed 2026-11-01). Three cases, so the text
+      // never straddles the top of a bar:
+      //   - the bar ends below the label: dark ink above the line;
+      //   - the bar reaches past the whole label: same spot, in the ink
+      //     that reads on the bar (labelInkOver);
+      //   - the bar ends inside the label: the label moves up to sit just
+      //     above the bar, in dark ink.
       const text = `${value.toFixed(1)}%`;
       const lift = 4;           // gap between rule and text baseline
-      const ty = y - lift;
-      const barLeft = bar.x - w / 2;
+      const textH = ctx.measureText(text).actualBoundingBoxAscent || 10;
       const barTop = Math.min(bar.y, bar.base);
-      const barH = Math.abs(bar.base - bar.y);
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(0, 0, chart.width, chart.height);
-      ctx.rect(barLeft, barTop, w, barH);
-      ctx.clip("evenodd");      // everything except the bar
-      ctx.fillStyle = HUMAN_LABEL_COLOR;
-      ctx.fillText(text, bar.x, ty);
-      ctx.restore();
-
-      if (barH > 0) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(barLeft, barTop, w, barH);
-        ctx.clip();             // the bar only
-        ctx.fillStyle = labelInkOver(bar.options && bar.options.backgroundColor);
-        ctx.fillText(text, bar.x, ty);
-        ctx.restore();
+      let ty = y - lift;
+      let ink = HUMAN_LABEL_COLOR;
+      if (barTop < ty - textH - 2) {
+        ink = labelInkOver(bar.options && bar.options.backgroundColor);
+      } else if (barTop < ty) {
+        ty = barTop - 3;
       }
+      ctx.fillStyle = ink;
+      ctx.fillText(text, bar.x, ty);
     }
     ctx.restore();
   },
