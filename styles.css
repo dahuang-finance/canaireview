@@ -11,7 +11,7 @@
   --highlight: #fff39a;
   --max-page: 1500px;
   --col-main: 720px;
-  --col-side: 96px;
+  --col-side: 128px;  /* was 96px; widened 2026-11-01 so "Gemini 4 Argon" fits on one line */
   --col-gap: 4rem;
 }
 

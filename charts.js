@@ -20,7 +20,7 @@
 // output on raw 2-reviewer sample (no pure-fit comment classifier
 // applied — consistent with the website's "no written comment" claim).
 // n ranges from 1,799 to 1,946 papers depending on the model.
-// Release dates verified via vendor announcements (Nov 2025 - Jul 2026).
+// Release dates verified via vendor announcements (Nov 2025 - Oct 2026).
 // pred_top, pred_mid = |β_H|/|β_AI| in the top-tail and middle score
 // regions, computed from each model's Poisson PML citation regression.
 // Top values > 1 (humans dominate top tail). Middle values < 1 (AI
@@ -41,6 +41,7 @@ const TREND_DATA = {
     { key: "opus-4.8", name: "Opus 4.8", date: "2026-05-28", l1: 0.463, corr: 0.232, corr_lo: 0.198, corr_hi: 0.265, pred_top: 0.623, pred_mid: 20.794, pred_bot: 0.276 },
     { key: "fable-5",  name: "Fable 5",  date: "2026-06-09", l1: 0.327, corr: 0.291, corr_lo: 0.257, corr_hi: 0.322, pred_top: 0.549, pred_mid: 24.277, pred_bot: 0.758 },
     { key: "fable-5.1",  name: "Fable 5.1",  date: "2026-09-01", l1: 0.531, corr: 0.269, corr_lo: 0.236, corr_hi: 0.301, pred_top: 0.825, pred_mid: 9.756, pred_bot: 0.643 },
+    { key: "opus-5.5",  name: "Opus 5.5",  date: "2026-09-22", l1: 0.572, corr: 0.257, corr_lo: 0.224, corr_hi: 0.288, pred_top: 0.538, pred_mid: 7.453, pred_bot: 0.566 },
   ],
   gpt: [
     { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.339, pred_mid: 1.452, pred_bot: 0.693 },
@@ -48,6 +49,9 @@ const TREND_DATA = {
     { key: "gpt-5.5",  name: "GPT-5.5",  date: "2026-04-23", l1: 0.466, corr: 0.176, corr_lo: 0.141, corr_hi: 0.212, pred_top: 0.220, pred_mid: 10.480, pred_bot: 0.406 },
     { key: "gpt-5.6-sol",  name: "GPT-5.6 Sol",  date: "2026-07-09", l1: 0.497, corr: 0.172, corr_lo: 0.138, corr_hi: 0.206, pred_top: 0.300, pred_mid: 21.529, pred_bot: 0.373 },
     { key: "gpt-6-astra",  name: "GPT-6 Astra",  date: "2026-09-03", l1: 0.915, corr: 0.174, corr_lo: 0.140, corr_hi: 0.206, pred_top: 0.462, pred_mid: 30.448, pred_bot: 0.526 },
+  ],
+  gemini: [
+    { key: "gemini-4-argon",  name: "Gemini 4 Argon",  date: "2026-10-13", l1: 0.250, corr: 0.264, corr_lo: 0.231, corr_hi: 0.295, pred_top: 0.399, pred_mid: 15.621, pred_bot: 0.264 },
   ],
 };
 
@@ -114,13 +118,13 @@ function easeOutCubic(t) {
 const FIG_DATA = {
   human_hist: [11.4586, 25.3444, 31.0956, 24.2510, 7.8504],
   models: {
-    "all":  { hist: [0.16, 27.53, 56.78, 14.99, 0.53],
+    "all":  { hist: [0.33, 26.38, 54.81, 17.74, 0.74],
                     heatmap: [
-                      [0.08, 5.27, 5.61, 0.72, 0.03],
-                      [0.08, 8.87, 13.97, 2.55, 0.1],
-                      [0.05, 7.43, 19.03, 4.76, 0.08],
-                      [0.0, 4.53, 14.4, 4.99, 0.05],
-                      [0.0, 1.16, 3.88, 2.11, 0.26],
+                      [0.13, 5.12, 5.4, 1.03, 0.03],
+                      [0.15, 8.56, 13.73, 3.01, 0.1],
+                      [0.05, 7.02, 18.67, 5.45, 0.15],
+                      [0.03, 4.17, 13.61, 5.99, 0.18],
+                      [0.0, 1.11, 3.58, 2.42, 0.31],
                     ] },
     "fable-5":   { hist: [4.68, 39.68, 33.03, 20.64, 1.97],
                     heatmap: [
@@ -137,6 +141,14 @@ const FIG_DATA = {
                       [0.21, 3.63, 12.4, 14.56, 0.57],
                       [0.15, 2.16, 8.02, 12.68, 0.93],
                       [0.03, 0.49, 2.11, 3.94, 0.82],
+                    ] },
+    "opus-5.5":  { hist: [1.11, 10.15, 32.68, 51.25, 4.81],
+                    heatmap: [
+                      [0.44, 2.14, 4.9, 4.07, 0.15],
+                      [0.44, 3.74, 9.67, 11.06, 0.64],
+                      [0.15, 2.42, 10.11, 17.46, 1.24],
+                      [0.15, 1.57, 6.27, 14.6, 1.37],
+                      [0.0, 0.34, 1.6, 4.28, 1.19],
                     ] },
     "opus-4.8":  { hist: [0.21, 20.2, 47.91, 30.58, 1.11],
                     heatmap: [
@@ -210,6 +222,14 @@ const FIG_DATA = {
                       [0.0, 0.39, 4.45, 17.95, 1.18],
                       [0.0, 0.1, 0.95, 5.63, 0.72],
                     ] },
+    "gemini-4-argon":  { hist: [13.68, 33.54, 23.3, 26.33, 3.15],
+                    heatmap: [
+                      [3.24, 4.84, 1.59, 1.88, 0.15],
+                      [4.58, 10.29, 5.3, 5.02, 0.39],
+                      [3.06, 10.42, 8.23, 8.9, 0.75],
+                      [2.24, 6.43, 6.15, 8.13, 1.03],
+                      [0.46, 1.62, 1.72, 2.73, 0.87],
+                    ] },
   },
   // for histogram x-axis: scores 1..5
   scores: [1, 2, 3, 4, 5],
@@ -217,6 +237,7 @@ const FIG_DATA = {
 
 const MODEL_LABELS = {
   "all":      "All-model average",
+  "opus-5.5": "Anthropic Opus 5.5",
   "fable-5.1": "Anthropic Fable 5.1",
   "fable-5":  "Anthropic Fable 5",
   "opus-4.8": "Anthropic Opus 4.8",
@@ -228,12 +249,14 @@ const MODEL_LABELS = {
   "gpt-5.5":  "OpenAI GPT-5.5",
   "gpt-5.4":  "OpenAI GPT-5.4",
   "gpt-5.1":  "OpenAI GPT-5.1",
+  "gemini-4-argon": "Google Gemini 4 Argon",
 };
 
 // Release + run dates surfaced in the static-snapshot eyebrow when a
 // specific model is locked. Single source of truth — update here when
 // a new frontier release is added or an existing model is re-run.
 const MODEL_RELEASE_DATES = {
+  "opus-5.5": "2026-09-22",
   "fable-5.1": "2026-09-01",
   "fable-5":  "2026-06-09",
   "opus-4.8": "2026-05-28",
@@ -245,9 +268,11 @@ const MODEL_RELEASE_DATES = {
   "gpt-5.5":  "2026-04-23",
   "gpt-5.4":  "2026-03-05",
   "gpt-5.1":  "2025-11-12",
+  "gemini-4-argon": "2026-10-13",
 };
 
 const MODEL_RUN_DATES = {
+  "opus-5.5": "2026-11-01",
   "fable-5.1": "2026-09-06",
   "fable-5":  "2026-06-11",
   "opus-4.8": "2026-05-28",
@@ -259,32 +284,44 @@ const MODEL_RUN_DATES = {
   "gpt-5.5":  "2026-05-02",
   "gpt-5.4":  "2026-05-02",
   "gpt-5.1":  "2026-05-02",
+  "gemini-4-argon": "2026-11-01",
 };
 
 // ============================================================
 // Style constants
 // ============================================================
 
-// Modern, editorial palette: warm terracotta vs cool ocean blue.
+// Modern, editorial palette: warm terracotta vs cool ocean blue, plus a
+// muted teal-green for Google (added 2026-11-01; its colorblind
+// separation from terracotta, the closest pair, is deutan ΔE 8.1 in the
+// dataviz palette validator).
 // Each vendor has a "dark" variant used for the highlighted state.
 const COLORS = {
-  opus:      "#c2553d",
-  opusDark:  "#7e2d1c",
-  gpt:       "#34618d",
-  gptDark:   "#1f3f5e",
-  human:     "#7c7565",
+  opus:       "#c2553d",
+  opusDark:   "#7e2d1c",
+  gpt:        "#34618d",
+  gptDark:    "#1f3f5e",
+  gemini:     "#2e9a7a",
+  geminiDark: "#1d634e",
+  human:      "#7c7565",
 };
 
-// Distinct shapes for the two vendor lineages.
-// Squares read visually smaller than circles at the same nominal radius,
-// so we scale GPT's marker up so they feel evenly weighted against Opus.
+// Legend and tooltip names of the vendor lineages.
+const VENDOR_LABELS = { opus: "Anthropic", gpt: "OpenAI", gemini: "Google" };
+
+// Distinct shapes for the three vendor lineages.
+// Squares and triangles read visually smaller than circles at the same
+// nominal radius, so we scale their markers up so they feel evenly
+// weighted against Opus.
 const SHAPES = {
-  opus: "circle",
-  gpt:  "rect",
+  opus:   "circle",
+  gpt:    "rect",
+  gemini: "triangle",
 };
 const SHAPE_SCALE = {
-  opus: 1.0,
-  gpt:  1.3,
+  opus:   1.0,
+  gpt:    1.3,
+  gemini: 1.5,
 };
 
 // Pre-render legend markers as SVG-backed Image elements at matched
@@ -303,6 +340,9 @@ function makeLegendMarker(shape, color) {
   let body;
   if (shape === "circle") {
     body = `<circle cx="${size/2}" cy="${size/2}" r="${(size-stroke)/2}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
+  } else if (shape === "triangle") {
+    const inset = stroke / 2;
+    body = `<polygon points="${size/2},${inset} ${size-inset},${size-inset} ${inset},${size-inset}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linejoin="round"/>`;
   } else {
     const inset = stroke / 2;
     body = `<rect x="${inset}" y="${inset}" width="${size-stroke}" height="${size-stroke}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
@@ -315,6 +355,7 @@ function makeLegendMarker(shape, color) {
 
 const OPUS_LEGEND_MARKER = makeLegendMarker("circle", COLORS.opus);
 const GPT_LEGEND_MARKER  = makeLegendMarker("rect",   COLORS.gpt);
+const GEMINI_LEGEND_MARKER = makeLegendMarker("triangle", COLORS.gemini);
 const BASE_RADIUS  = 6;
 const HIGH_RADIUS  = 10;
 const HOVER_RADIUS = 9;
@@ -370,13 +411,13 @@ function scriptablePointBorderWidth(ctx) {
 function scriptablePointBackgroundColor(ctx) {
   const vendor = ctxVendor(ctx);
   if (!vendor) return "#fff";
-  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  const base = COLORS[vendor];
   return ctxIsFocus(ctx) ? base : "#fff";
 }
 function scriptablePointBorderColor(ctx) {
   const vendor = ctxVendor(ctx);
   if (!vendor) return "#888";
-  return vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  return COLORS[vendor];
 }
 function scriptableLineBorderWidth(ctx) {
   return responsiveLineWidth(ctx.chart.width);
@@ -409,18 +450,18 @@ const POINT_BASE = {
 // X-axis: only Nov 2025 and Sep 2026 labeled
 // ============================================================
 // Two anchor labels bracket the data: the first releases (Nov 2025)
-// and the latest (Sep 2026). Intermediate months are left unlabeled
+// and the latest (Oct 2026). Intermediate months are left unlabeled
 // because at the trend charts' narrow width adjacent month labels
 // collide (several releases are only ~5 weeks apart).
 
 const X_MIN = "2025-10-15";
-const X_MAX = "2026-09-20";
+const X_MAX = "2026-11-01";
 
 // Custom: only labeled ticks, positioned at ~2/3 of each month so
 // the labels sit visually close to where the data lives, not at the
 // month boundary.
 const TICK_NOV = new Date(2025, 10, 20).getTime();
-const TICK_JUL = new Date(2026,  8, 5).getTime();  // relabeled Sep 2026 (Fable 5.1, 2026-09-01)
+const TICK_LAST = new Date(2026,  9, 15).getTime();  // Oct 2026 (Gemini 4 Argon, 2026-10-13)
 
 const X_AXIS_TIME = {
   type: "time",
@@ -430,7 +471,7 @@ const X_AXIS_TIME = {
   afterBuildTicks: function (scale) {
     scale.ticks = [
       { value: TICK_NOV, major: true },
-      { value: TICK_JUL, major: true },
+      { value: TICK_LAST, major: true },
     ];
   },
   ticks: {
@@ -440,7 +481,7 @@ const X_AXIS_TIME = {
     font: { size: 10 },
     callback: function (value) {
       if (value === TICK_NOV) return "Nov 2025";
-      if (value === TICK_JUL) return "Sep 2026";
+      if (value === TICK_LAST) return "Oct 2026";
       return "";
     },
   },
@@ -982,13 +1023,13 @@ function pointBorderWidths(vendor, selectedKey) {
   );
 }
 function pointFillColors(vendor, selectedKey) {
-  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  const base = COLORS[vendor];
   return TREND_DATA[vendor].map(m =>
     isFocus(vendor, m, selectedKey) ? base : "#fff"
   );
 }
 function pointBorderColors(vendor, selectedKey) {
-  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  const base = COLORS[vendor];
   return TREND_DATA[vendor].map(_ => base);  // border is always the base color
 }
 
@@ -1003,6 +1044,7 @@ let currentSelection = "all";
 function vendorOfKey(key) {
   if (!key || key === "all") return null;
   // "opus" here means the Anthropic lineage; Fable (Mythos-class) joins it.
+  if (key.startsWith("gemini")) return "gemini";
   return (key.startsWith("opus") || key.startsWith("fable") || key.startsWith("mythos"))
     ? "opus" : "gpt";
 }
@@ -1161,19 +1203,17 @@ function alphaFromRgba(rgba, fallback) {
 // Custom legend onClick. Three responsibilities:
 //   (1) Vendor lock: block hiding Opus / GPT if the dropdown is currently
 //       highlighting a model from that vendor.
-//   (2) For Opus / GPT (idx 0/1): use Chart.js's normal show/hide for
-//       line + markers, then fade the whiskers in parallel.
+//   (2) For the vendor series (idx 0-2): use Chart.js's normal show/hide
+//       for line + markers, then fade the whiskers in parallel.
 //   (3) For the h2h line (idx 4): fully manual fade for both the dashed
 //       line and the CI band, because Chart.js's dataset hide is too
 //       abrupt for a stroke-only / fill-only dataset.
 function lockedLegendOnClick(e, legendItem, legend) {
   const idx = legendItem.datasetIndex;
   const chart = legend.chart;
-  if (idx < 2) {
-    const vendor = idx === 0 ? "opus" : "gpt";
-    if (vendorOfKey(currentSelection) === vendor) {
-      return;
-    }
+  const vendor = chart.data.datasets[idx].__vendor;
+  if (vendor && vendorOfKey(currentSelection) === vendor) {
+    return;
   }
   const mainLabel = chart.data.datasets[idx].label || "";
 
@@ -1191,7 +1231,7 @@ function lockedLegendOnClick(e, legendItem, legend) {
   // Drive a parallel whisker-opacity fade on the same easeOutCubic
   // curve and duration as Chart.js's show/hide, so the whiskers
   // disappear/reappear smoothly together with the line + markers.
-  if (idx === 0 || idx === 1) {
+  if (vendor) {
     fadeWhiskers(chart, idx, willBeVisible);
   }
 }
@@ -1220,6 +1260,15 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
           borderColor: COLORS.gpt,
           pointStyle: SHAPES.gpt,
           __vendor: "gpt",
+          ...POINT_BASE,
+          order: 3,
+        },
+        {
+          label: "Google",
+          data: pointsFor("gemini", metric),
+          borderColor: COLORS.gemini,
+          pointStyle: SHAPES.gemini,
+          __vendor: "gemini",
           ...POINT_BASE,
           order: 3,
         },
@@ -1255,6 +1304,10 @@ function buildLineChart(canvasId, metric, metricLabel, yCfg) {
                 pointStyle: GPT_LEGEND_MARKER,
                 hidden: !chart.isDatasetVisible(1),
                 datasetIndex: 1 },
+              { text: "Google",
+                pointStyle: GEMINI_LEGEND_MARKER,
+                hidden: !chart.isDatasetVisible(2),
+                datasetIndex: 2 },
             ],
           },
         },
@@ -1282,9 +1335,9 @@ const chartCorr = buildLineChart("chart-corr", "corr", "r",  Y_CFG_CORR);
 // regions for each vendor — so it doesn't fit buildLineChart's
 // 2-vendor template. Build it explicitly.
 function predDataset(vendor, region) {
-  const base = vendor === "opus" ? COLORS.opus : COLORS.gpt;
+  const base = COLORS[vendor];
   return {
-    label: vendor === "opus" ? "Anthropic" : "OpenAI",
+    label: VENDOR_LABELS[vendor],
     data: predDataFor(vendor, region),
     borderColor: base,
     borderDash: [],
@@ -1311,6 +1364,7 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
     datasets: [
       predDataset("opus", currentPredRegion),  // index 0
       predDataset("gpt",  currentPredRegion),  // index 1
+      predDataset("gemini", currentPredRegion),  // index 2
     ],
   },
   options: {
@@ -1343,6 +1397,10 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
               pointStyle: GPT_LEGEND_MARKER,
               hidden: !chart.isDatasetVisible(1),
               datasetIndex: 1 },
+            { text: "Google",
+              pointStyle: GEMINI_LEGEND_MARKER,
+              hidden: !chart.isDatasetVisible(2),
+              datasetIndex: 2 },
           ],
         },
         // Vendor-lock: if the model picker has that vendor selected,
@@ -1353,7 +1411,7 @@ const chartPred = new Chart(document.getElementById("chart-pred"), {
         onClick: (e, legendItem, legend) => {
           const chart = legend.chart;
           const dsIdx = legendItem.datasetIndex;
-          const vendor = dsIdx === 0 ? "opus" : "gpt";
+          const vendor = chart.data.datasets[dsIdx].__vendor;
           if (vendorOfKey(currentSelection) === vendor) return;
           const willBeVisible = !chart.isDatasetVisible(dsIdx);
           if (willBeVisible) chart.show(dsIdx);
@@ -1409,6 +1467,11 @@ chartCorr.options.plugins.errorBars = {
       points: TREND_DATA.gpt.map((m) => ({ x: m.date, lo: m.corr_lo, hi: m.corr_hi })),
       color: COLORS.gpt,
       mainDatasetIndex: 1,
+    },
+    {
+      points: TREND_DATA.gemini.map((m) => ({ x: m.date, lo: m.corr_lo, hi: m.corr_hi })),
+      color: COLORS.gemini,
+      mainDatasetIndex: 2,
     },
   ],
 };
@@ -1551,6 +1614,7 @@ function applyPredRegion(region) {
   // right end), so it doesn't need to reposition per region.
   chartPred.data.datasets[0].data = predDataFor("opus", region);
   chartPred.data.datasets[1].data = predDataFor("gpt",  region);
+  chartPred.data.datasets[2].data = predDataFor("gemini", region);
   chartPred.update();
   document.querySelectorAll(".region-toggle").forEach((btn) => {
     const active = btn.dataset.region === region;
@@ -1884,18 +1948,19 @@ const SCATTER_DOT = {
   baseAlpha: "rgba(140,140,140,0.20)",
   opusAlpha: "rgba(194,85,61,0.28)",     // COLORS.opus at low alpha
   gptAlpha:  "rgba(52,97,141,0.28)",     // COLORS.gpt at low alpha
+  geminiAlpha: "rgba(46,154,122,0.28)",  // COLORS.gemini at low alpha
 };
 
 function scatterDotColor(modelKey) {
   if (modelKey === "all") return SCATTER_DOT.baseAlpha;
   const v = vendorOfKey(modelKey);
-  return v === "opus" ? SCATTER_DOT.opusAlpha : SCATTER_DOT.gptAlpha;
+  return SCATTER_DOT[v + "Alpha"];
 }
 
 function scatterLineColor(modelKey) {
   if (modelKey === "all") return "#1f1f1f";
   const v = vendorOfKey(modelKey);
-  return v === "opus" ? COLORS.opus : COLORS.gpt;
+  return COLORS[v];
 }
 
 // Marker fill for the binned-mean dots is a darker variant of the
@@ -1904,7 +1969,7 @@ function scatterLineColor(modelKey) {
 function scatterMarkerFillColor(modelKey) {
   if (modelKey === "all") return "#000000";
   const v = vendorOfKey(modelKey);
-  return v === "opus" ? "#7a3525" : "#1f3a55";
+  return { opus: "#7a3525", gpt: "#1f3a55", gemini: "#1d634e" }[v];
 }
 
 // OLS regression of AI score on human score across all per-review
@@ -2172,7 +2237,7 @@ let PREDICTIVE_CURRENT_BINS = null;
 const PRED_HUMAN_COLOR = "#333333";
 function predAiColorFor(modelKey) {
   if (modelKey === "all") return "#9a9a9a";
-  return vendorOfKey(modelKey) === "opus" ? COLORS.opus : COLORS.gpt;
+  return COLORS[vendorOfKey(modelKey)];
 }
 
 const chartPredictive = new Chart(document.getElementById("chart-predictive"), {
@@ -2351,13 +2416,14 @@ function vendorOf(modelKey) {
   if (modelKey.startsWith("fable"))  return "opus";
   if (modelKey.startsWith("mythos")) return "opus";
   if (modelKey.startsWith("gpt"))    return "gpt";
+  if (modelKey.startsWith("gemini")) return "gemini";
   return null;
 }
 
 function aiBarColorFor(modelKey) {
   if (modelKey === "all") return COLORS.opus;  // arbitrary; "average" is gray-ish
   const v = vendorOf(modelKey);
-  return v === "opus" ? COLORS.opus : COLORS.gpt;
+  return COLORS[v];
 }
 
 function applyModelSelection(modelKey) {
@@ -2366,11 +2432,11 @@ function applyModelSelection(modelKey) {
 
   // If a specific vendor is now selected, make sure that vendor's
   // series is visible everywhere (un-hide if it had been toggled off
-  // via the legend). All three trend charts now have a uniform 2-
-  // dataset layout (opus=0, gpt=1).
+  // via the legend). All three trend charts now have a uniform 3-
+  // dataset layout (opus=0, gpt=1, gemini=2).
   const vendor = vendorOfKey(modelKey);
   if (vendor) {
-    const dsIdx = vendor === "opus" ? 0 : 1;
+    const dsIdx = { opus: 0, gpt: 1, gemini: 2 }[vendor];
     for (const chart of [chartL1, chartCorr, chartPred]) {
       if (!chart.isDatasetVisible(dsIdx)) {
         chart.setDatasetVisibility(dsIdx, true);

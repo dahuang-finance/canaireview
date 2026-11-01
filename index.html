@@ -205,6 +205,22 @@
             </p>
             <ul class="log-entries">
               <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-11-01">November 1, 2026</time><span class="log-model">Google Gemini 4 Argon</span><span class="log-released">released October 13, 2026</span></p>
+                <ul class="log-claims">
+                  <li>Gemini 4 Argon, the first Google model in the study, is the first model whose scores are not compressed. Its distance from the human score distribution (L&#8321; = 0.25) is below that of every other model in the study, including Fable 5 (0.33). It gives the top score to 14% of papers, slightly more often than human reviewers do, but the bottom score to only 3%.</li>
+                  <li>Agreement with a single human reviewer is r = 0.26, above the human-human benchmark.</li>
+                  <li>The tail-versus-middle pattern holds. Humans are ahead in both tails, with both gaps significant at the 1% level, and Gemini 4 Argon predicts citations in the middle, where the human score does not.</li>
+                </ul>
+              </li>
+              <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-11-01">November 1, 2026</time><span class="log-model">Anthropic Opus 5.5</span><span class="log-released">released September 22, 2026</span></p>
+                <ul class="log-claims">
+                  <li>Opus 5.5 scores harshly, as Fable 5.1 and GPT-6 Astra do. It puts 51% of papers at a 4 and 1% at the top score, and its distance from the human score distribution (L&#8321; = 0.57) is close to Fable 5.1's (0.53).</li>
+                  <li>Agreement with a single human reviewer is r = 0.26, level with Opus 4.7 and above the human-human benchmark.</li>
+                  <li>Opus 5.5 predicts citations in the middle, where the human score does not. Humans are ahead in both tails, but only the top-tail gap is significant, and only at the 10% level.</li>
+                </ul>
+              </li>
+              <li class="log-entry">
                 <p class="log-meta"><time datetime="2026-09-06">September 6, 2026</time><span class="log-model">OpenAI GPT-6 Astra</span><span class="log-released">released September 3, 2026</span></p>
                 <ul class="log-claims">
                   <li>GPT-6 Astra is the harshest and most compressed model yet. It gives no paper the top score, puts 70% of papers at a 4, and sits nearly as far from the human score distribution as GPT-5.1 did at the start, from the opposite side.</li>
@@ -262,6 +278,7 @@
           <label for="model-select">Model:</label>
           <select id="model-select" class="model-select">
             <option value="all" selected>All-model average</option>
+            <option value="opus-5.5">Anthropic Opus 5.5</option>
             <option value="fable-5.1">Anthropic Fable 5.1</option>
             <option value="fable-5">Anthropic Fable 5</option>
             <option value="opus-4.8">Anthropic Opus 4.8</option>
@@ -273,6 +290,7 @@
             <option value="gpt-5.5">OpenAI GPT-5.5</option>
             <option value="gpt-5.4">OpenAI GPT-5.4</option>
             <option value="gpt-5.1">OpenAI GPT-5.1</option>
+            <option value="gemini-4-argon">Google Gemini 4 Argon</option>
           </select>
         </div>
       </div>
@@ -366,6 +384,7 @@
           <label for="model-select-2">Model:</label>
           <select id="model-select-2" class="model-select">
             <option value="all" selected>All-model average</option>
+            <option value="opus-5.5">Anthropic Opus 5.5</option>
             <option value="fable-5.1">Anthropic Fable 5.1</option>
             <option value="fable-5">Anthropic Fable 5</option>
             <option value="opus-4.8">Anthropic Opus 4.8</option>
@@ -377,6 +396,7 @@
             <option value="gpt-5.5">OpenAI GPT-5.5</option>
             <option value="gpt-5.4">OpenAI GPT-5.4</option>
             <option value="gpt-5.1">OpenAI GPT-5.1</option>
+            <option value="gemini-4-argon">Google Gemini 4 Argon</option>
           </select>
         </div>
       </div>
@@ -458,6 +478,7 @@
         <h3>Models<br>covered</h3>
         <ul class="models-side-list">
           <span class="model-row-indicator" aria-hidden="true"></span>
+          <li class="model-row" data-model="opus-5.5"><span class="model">Opus 5.5</span></li>
           <li class="model-row" data-model="fable-5.1"><span class="model">Fable 5.1</span></li>
           <li class="model-row" data-model="fable-5"><span class="model">Fable 5</span></li>
           <li class="model-row" data-model="opus-4.8"><span class="model">Opus 4.8</span></li>
@@ -469,6 +490,7 @@
           <li class="model-row" data-model="gpt-5.5"><span class="model">GPT&#8209;5.5</span></li>
           <li class="model-row" data-model="gpt-5.4"><span class="model">GPT&#8209;5.4</span></li>
           <li class="model-row" data-model="gpt-5.1"><span class="model">GPT&#8209;5.1</span></li>
+          <li class="model-row vendor-break" data-model="gemini-4-argon"><span class="model">Gemini 4 Argon</span></li>
         </ul>
       </aside>
     </div><!-- /figures-grid -->
