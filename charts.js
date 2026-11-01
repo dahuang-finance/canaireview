@@ -1659,6 +1659,33 @@ const HUMAN_REF_WIDTH = 2.0;
 const HUMAN_LABEL_COLOR = "#1f1f1f";
 const HUMAN_LABEL_FONT = "600 10.5px -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', sans-serif";
 
+// Ink for the part of a human-reference label that sits over an AI bar:
+// white or HUMAN_LABEL_COLOR, whichever has the higher WCAG contrast
+// against the bar's fill (white on the terracotta and blue bars, dark on
+// the teal-green and gray ones). A translucent fill is blended over white.
+function labelInkOver(fill) {
+  let r, g, b, a = 1;
+  const s = String(fill || "").trim();
+  const hex = s.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
+  const rgba = s.match(/^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*(?:,\s*([\d.]+)\s*)?\)$/i);
+  if (hex) {
+    const h = hex[1].length === 3 ? hex[1].replace(/./g, "$&$&") : hex[1];
+    [r, g, b] = [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16));
+  } else if (rgba) {
+    [r, g, b] = [1, 2, 3].map((i) => Number(rgba[i]));
+    if (rgba[4] !== undefined) a = Number(rgba[4]);
+  } else {
+    return HUMAN_LABEL_COLOR;
+  }
+  const lin = (c) => {
+    c = (a * c + (1 - a) * 255) / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  const L_INK = 0.0137;  // relative luminance of HUMAN_LABEL_COLOR (#1f1f1f)
+  return 1.05 / (L + 0.05) >= (L + 0.05) / (L_INK + 0.05) ? "#ffffff" : HUMAN_LABEL_COLOR;
+}
+
 // Custom Chart.js plugin: draws a horizontal rule across each AI bar
 // at the human percentage for that score, with the percentage label
 // tucked just above the line.
@@ -1698,32 +1725,36 @@ const humanRefPlugin = {
       ctx.lineTo(xRight, y);
       ctx.stroke();
 
-      // Label tucked above the line, with a near-white pill background so
-      // the percentage stays readable when an AI bar reaches up under it.
+      // Label tucked above the line, with no background box: a box hid the
+      // top of any AI bar that reached past the line and made the bar look
+      // shorter than it is (fixed 2026-11-01). The text is drawn twice
+      // under two clips, so the part over the bar takes the ink that
+      // contrasts with the bar and the rest keeps the usual label color.
       const text = `${value.toFixed(1)}%`;
-      const tw = ctx.measureText(text).width;
-      const th = 11;            // approx font cap height
-      const padX = 4, padY = 1.5;
-      const lift = 4;           // gap between rule and pill bottom
-      const cx = bar.x;
-      const top = y - lift - th - padY;
-      const left = cx - tw / 2 - padX;
-      const pillW = tw + 2 * padX;
-      const pillH = th + 2 * padY;
+      const lift = 4;           // gap between rule and text baseline
+      const ty = y - lift;
+      const barLeft = bar.x - w / 2;
+      const barTop = Math.min(bar.y, bar.base);
+      const barH = Math.abs(bar.base - bar.y);
 
       ctx.save();
-      ctx.fillStyle = "rgba(255,255,255,0.94)";
-      // Rounded pill (fall back to plain rect if roundRect not supported)
-      if (ctx.roundRect) {
-        ctx.beginPath();
-        ctx.roundRect(left, top, pillW, pillH, 2);
-        ctx.fill();
-      } else {
-        ctx.fillRect(left, top, pillW, pillH);
-      }
+      ctx.beginPath();
+      ctx.rect(0, 0, chart.width, chart.height);
+      ctx.rect(barLeft, barTop, w, barH);
+      ctx.clip("evenodd");      // everything except the bar
       ctx.fillStyle = HUMAN_LABEL_COLOR;
-      ctx.fillText(text, cx, y - lift);
+      ctx.fillText(text, bar.x, ty);
       ctx.restore();
+
+      if (barH > 0) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(barLeft, barTop, w, barH);
+        ctx.clip();             // the bar only
+        ctx.fillStyle = labelInkOver(bar.options && bar.options.backgroundColor);
+        ctx.fillText(text, bar.x, ty);
+        ctx.restore();
+      }
     }
     ctx.restore();
   },
