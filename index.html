@@ -205,6 +205,14 @@
             </p>
             <ul class="log-entries">
               <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-11-09">November 9, 2026</time><span class="log-model">Anthropic Fable&nbsp;5.2</span><span class="log-released">released November 9, 2026</span></p>
+                <ul class="log-claims">
+                  <li>Fable 5.2 scores harshly, as Fable 5.1 and Opus 5.5 do. It puts 44% of papers at a 4 and under 2% at the top score. Its distance from the human score distribution (L&#8321; = 0.47) is smaller than Fable 5.1's (0.53) and larger than Fable 5's (0.33).</li>
+                  <li>Agreement with a single human reviewer is r = 0.29, level with Fable 5 as the highest in the study and above the human-human benchmark.</li>
+                  <li>Fable 5.2 predicts citations in the middle, where the human score does not. Humans are ahead in both tails, but neither gap is statistically significant.</li>
+                </ul>
+              </li>
+              <li class="log-entry">
                 <p class="log-meta"><time datetime="2026-11-01">November 1, 2026</time><span class="log-model">Google Gemini 4 Argon</span><span class="log-released">released October 13, 2026</span></p>
                 <ul class="log-claims">
                   <li>Gemini 4 Argon, the first Google model in the study, is the first model whose scores are not compressed. Its distance from the human score distribution (L&#8321; = 0.25) is below that of every other model in the study, including Fable 5 (0.33). It gives the top score to 14% of papers, slightly more often than human reviewers do, but the bottom score to only 3%.</li>
@@ -278,6 +286,7 @@
           <label for="model-select">Model:</label>
           <select id="model-select" class="model-select">
             <option value="all" selected>All-model average</option>
+            <option value="fable-5.2">Anthropic Fable 5.2</option>
             <option value="opus-5.5">Anthropic Opus 5.5</option>
             <option value="fable-5.1">Anthropic Fable 5.1</option>
             <option value="fable-5">Anthropic Fable 5</option>
@@ -384,6 +393,7 @@
           <label for="model-select-2">Model:</label>
           <select id="model-select-2" class="model-select">
             <option value="all" selected>All-model average</option>
+            <option value="fable-5.2">Anthropic Fable 5.2</option>
             <option value="opus-5.5">Anthropic Opus 5.5</option>
             <option value="fable-5.1">Anthropic Fable 5.1</option>
             <option value="fable-5">Anthropic Fable 5</option>
@@ -478,6 +488,7 @@
         <h3>Models<br>covered</h3>
         <ul class="models-side-list">
           <span class="model-row-indicator" aria-hidden="true"></span>
+          <li class="model-row" data-model="fable-5.2"><span class="model">Fable 5.2</span></li>
           <li class="model-row" data-model="opus-5.5"><span class="model">Opus 5.5</span></li>
           <li class="model-row" data-model="fable-5.1"><span class="model">Fable 5.1</span></li>
           <li class="model-row" data-model="fable-5"><span class="model">Fable 5</span></li>

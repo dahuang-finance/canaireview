@@ -20,7 +20,7 @@
 // output on raw 2-reviewer sample (no pure-fit comment classifier
 // applied — consistent with the website's "no written comment" claim).
 // n ranges from 1,799 to 1,946 papers depending on the model.
-// Release dates verified via vendor announcements (Nov 2025 - Oct 2026).
+// Release dates verified via vendor announcements (Nov 2025 - Nov 2026).
 // pred_top, pred_mid = |β_H|/|β_AI| in the top-tail and middle score
 // regions, computed from each model's Poisson PML citation regression.
 // Top values > 1 (humans dominate top tail). Middle values < 1 (AI
@@ -42,6 +42,7 @@ const TREND_DATA = {
     { key: "fable-5",  name: "Fable 5",  date: "2026-06-09", l1: 0.327, corr: 0.291, corr_lo: 0.257, corr_hi: 0.322, pred_top: 0.549, pred_mid: 24.277, pred_bot: 0.758 },
     { key: "fable-5.1",  name: "Fable 5.1",  date: "2026-09-01", l1: 0.531, corr: 0.269, corr_lo: 0.236, corr_hi: 0.301, pred_top: 0.825, pred_mid: 9.756, pred_bot: 0.643 },
     { key: "opus-5.5",  name: "Opus 5.5",  date: "2026-09-22", l1: 0.572, corr: 0.257, corr_lo: 0.224, corr_hi: 0.288, pred_top: 0.538, pred_mid: 7.453, pred_bot: 0.566 },
+    { key: "fable-5.2",  name: "Fable 5.2",  date: "2026-11-09", l1: 0.472, corr: 0.290, corr_lo: 0.260, corr_hi: 0.320, pred_top: 0.751, pred_mid: 4.472, pred_bot: 0.544 },
   ],
   gpt: [
     { key: "gpt-5.1",  name: "GPT-5.1",  date: "2025-11-12", l1: 0.938, corr: 0.112, corr_lo: 0.076, corr_hi: 0.148, pred_top: 0.339, pred_mid: 1.452, pred_bot: 0.693 },
@@ -118,13 +119,13 @@ function easeOutCubic(t) {
 const FIG_DATA = {
   human_hist: [11.4586, 25.3444, 31.0956, 24.2510, 7.8504],
   models: {
-    "all":  { hist: [0.33, 26.38, 54.81, 17.74, 0.74],
+    "all":  { hist: [0.29, 22.61, 55.31, 20.81, 0.98],
                     heatmap: [
-                      [0.13, 5.12, 5.4, 1.03, 0.03],
-                      [0.15, 8.56, 13.73, 3.01, 0.1],
-                      [0.05, 7.02, 18.67, 5.45, 0.15],
-                      [0.03, 4.17, 13.61, 5.99, 0.18],
-                      [0.0, 1.11, 3.58, 2.42, 0.31],
+                      [0.1, 4.45, 5.92, 1.18, 0.05],
+                      [0.13, 7.9, 13.89, 3.52, 0.13],
+                      [0.05, 5.84, 18.49, 6.79, 0.18],
+                      [0.03, 3.5, 13.53, 6.69, 0.23],
+                      [0.0, 0.75, 3.47, 2.75, 0.44],
                     ] },
     "fable-5":   { hist: [4.68, 39.68, 33.03, 20.64, 1.97],
                     heatmap: [
@@ -149,6 +150,14 @@ const FIG_DATA = {
                       [0.15, 2.42, 10.11, 17.46, 1.24],
                       [0.15, 1.57, 6.27, 14.6, 1.37],
                       [0.0, 0.34, 1.6, 4.28, 1.19],
+                    ] },
+    "fable-5.2":  { hist: [1.64, 16.58, 35.42, 43.53, 2.83],
+                    heatmap: [
+                      [0.57, 3.63, 4.58, 2.83, 0.1],
+                      [0.62, 5.61, 10.65, 8.38, 0.31],
+                      [0.28, 4.35, 10.93, 15.15, 0.64],
+                      [0.23, 2.44, 6.71, 13.5, 1.08],
+                      [0.0, 0.54, 2.11, 3.86, 0.9],
                     ] },
     "opus-4.8":  { hist: [0.21, 20.2, 47.91, 30.58, 1.11],
                     heatmap: [
@@ -237,6 +246,7 @@ const FIG_DATA = {
 
 const MODEL_LABELS = {
   "all":      "All-model average",
+  "fable-5.2": "Anthropic Fable 5.2",
   "opus-5.5": "Anthropic Opus 5.5",
   "fable-5.1": "Anthropic Fable 5.1",
   "fable-5":  "Anthropic Fable 5",
@@ -256,6 +266,7 @@ const MODEL_LABELS = {
 // specific model is locked. Single source of truth — update here when
 // a new frontier release is added or an existing model is re-run.
 const MODEL_RELEASE_DATES = {
+  "fable-5.2": "2026-11-09",
   "opus-5.5": "2026-09-22",
   "fable-5.1": "2026-09-01",
   "fable-5":  "2026-06-09",
@@ -272,6 +283,7 @@ const MODEL_RELEASE_DATES = {
 };
 
 const MODEL_RUN_DATES = {
+  "fable-5.2": "2026-11-09",
   "opus-5.5": "2026-11-01",
   "fable-5.1": "2026-09-06",
   "fable-5":  "2026-06-11",
@@ -450,18 +462,18 @@ const POINT_BASE = {
 // X-axis: only Nov 2025 and Sep 2026 labeled
 // ============================================================
 // Two anchor labels bracket the data: the first releases (Nov 2025)
-// and the latest (Oct 2026). Intermediate months are left unlabeled
+// and the latest (Nov 2026). Intermediate months are left unlabeled
 // because at the trend charts' narrow width adjacent month labels
 // collide (several releases are only ~5 weeks apart).
 
 const X_MIN = "2025-10-15";
-const X_MAX = "2026-11-01";
+const X_MAX = "2026-11-30";
 
 // Custom: only labeled ticks, positioned at ~2/3 of each month so
 // the labels sit visually close to where the data lives, not at the
 // month boundary.
 const TICK_NOV = new Date(2025, 10, 20).getTime();
-const TICK_LAST = new Date(2026,  9, 15).getTime();  // Oct 2026 (Gemini 4 Argon, 2026-10-13)
+const TICK_LAST = new Date(2026, 10, 9).getTime();  // Nov 2026 (Fable 5.2, 2026-11-09)
 
 const X_AXIS_TIME = {
   type: "time",
@@ -481,7 +493,7 @@ const X_AXIS_TIME = {
     font: { size: 10 },
     callback: function (value) {
       if (value === TICK_NOV) return "Nov 2025";
-      if (value === TICK_LAST) return "Oct 2026";
+      if (value === TICK_LAST) return "Nov 2026";
       return "";
     },
   },
