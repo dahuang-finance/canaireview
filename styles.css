@@ -11,7 +11,7 @@
   --highlight: #fff39a;
   --max-page: 1500px;
   --col-main: 720px;
-  --col-side: 140px;  /* 96px originally; 128px on 2026-11-01 for "Gemini 4 Argon"; 140px on 2026-11-10 for "Gemini 4 Carbon" */
+  --col-side: 150px;  /* 96px originally; 128px on 2026-11-01 for "Gemini 4 Argon"; 140px on 2026-11-10 for "Gemini 4 Carbon"; 150px with the scrollable list, for a thin scrollbar */
   --col-gap: 4rem;
 }
 
@@ -325,6 +325,55 @@ h1 {
   right: 0;
   height: 1px;
   background: var(--rule);
+}
+
+/* ---------- Scrollable model list (2026-11-10). With 15 models the
+   sticky sidebar is taller than a laptop viewport, and a sticky box
+   taller than the viewport hides its last rows. So the sidebar is
+   capped at the viewport height: the heading stays put and the list
+   scrolls inside it. On a tall window the list fits and nothing
+   changes. At 920px and below the sidebar is static and the page
+   itself scrolls, so none of this applies there. */
+@media (min-width: 921px) {
+  .figures-sidebar {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 3rem);   /* 1.5rem sticky offset + 1.5rem below */
+    max-height: calc(100dvh - 3rem);
+  }
+  .figures-sidebar h3 {
+    flex: 0 0 auto;
+  }
+  .models-side-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Rows and the selection block reach 0.4rem to the left of the
+       list, and overflow clips at the padding edge. So that strip
+       becomes padding, and the list shifts left by the same amount. */
+    padding-left: 0.4rem;
+    margin-left: -0.4rem;
+    scrollbar-width: thin;
+    scrollbar-color: var(--rule) transparent;
+  }
+  .model-row-indicator {
+    left: 0;   /* the padding edge is now where -0.4rem used to be */
+  }
+  /* A fade at the edge where more rows continue. charts.js sets these
+     classes from the scroll position (updateSidebarScrollHints). */
+  .models-side-list.more-below {
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4rem), transparent);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 2.4rem), transparent);
+  }
+  .models-side-list.more-above {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.4rem);
+    mask-image: linear-gradient(to bottom, transparent, #000 2.4rem);
+  }
+  .models-side-list.more-above.more-below {
+    -webkit-mask-image: linear-gradient(to bottom, transparent, #000 2.4rem, #000 calc(100% - 2.4rem), transparent);
+    mask-image: linear-gradient(to bottom, transparent, #000 2.4rem, #000 calc(100% - 2.4rem), transparent);
+  }
 }
 
 /* =========================================================================

@@ -2625,6 +2625,8 @@ function positionSidebarIndicator(modelKey) {
     sidebarIndicator.classList.remove("visible");
     return;
   }
+  // The indicator sits inside the list and scrolls with it, so its
+  // offset is measured in the list's own coordinates (+ scrollTop).
   const listRect = sidebarList.getBoundingClientRect();
   const rowRect = selectedRow.getBoundingClientRect();
   const wasVisible = sidebarIndicator.classList.contains("visible");
@@ -2633,24 +2635,57 @@ function positionSidebarIndicator(modelKey) {
   if (!wasVisible) {
     const prev = sidebarIndicator.style.transition;
     sidebarIndicator.style.transition = "none";
-    sidebarIndicator.style.transform = `translateY(${rowRect.top - listRect.top}px)`;
+    sidebarIndicator.style.transform = `translateY(${rowRect.top - listRect.top + sidebarList.scrollTop}px)`;
     sidebarIndicator.style.height = `${rowRect.height}px`;
     // Force a reflow before re-enabling transitions.
     void sidebarIndicator.offsetHeight;
     sidebarIndicator.style.transition = prev;
     sidebarIndicator.classList.add("visible");
   } else {
-    sidebarIndicator.style.transform = `translateY(${rowRect.top - listRect.top}px)`;
+    sidebarIndicator.style.transform = `translateY(${rowRect.top - listRect.top + sidebarList.scrollTop}px)`;
     sidebarIndicator.style.height = `${rowRect.height}px`;
   }
 }
 
+// On desktop the list scrolls inside the sticky sidebar when it is
+// taller than the window (styles.css, "Scrollable model list"). These
+// classes turn on a fade at whichever edge has more rows beyond it.
+function updateSidebarScrollHints() {
+  if (!sidebarList) return;
+  const max = sidebarList.scrollHeight - sidebarList.clientHeight;
+  sidebarList.classList.toggle("more-above", max > 1 && sidebarList.scrollTop > 1);
+  sidebarList.classList.toggle("more-below", max > 1 && sidebarList.scrollTop < max - 1);
+}
+
+// A model picked from a dropdown may be scrolled out of the list.
+// Scroll the list (never the page) just far enough to show its row,
+// clear of the edge fade.
+function revealSidebarRow(row) {
+  if (!sidebarList || sidebarList.scrollHeight <= sidebarList.clientHeight + 1) return;
+  const pad = 44;
+  const top = row.offsetTop;
+  const bottom = top + row.offsetHeight;
+  let target = null;
+  if (top - pad < sidebarList.scrollTop) {
+    target = Math.max(0, top - pad);
+  } else if (bottom + pad > sidebarList.scrollTop + sidebarList.clientHeight) {
+    target = bottom + pad - sidebarList.clientHeight;
+  }
+  if (target !== null) sidebarList.scrollTo({ top: target, behavior: "smooth" });
+}
+
 function syncSidebarSelected(modelKey) {
+  let selectedRow = null;
   for (const row of sidebarRows) {
-    if (row.dataset.model === modelKey) row.classList.add("selected");
-    else row.classList.remove("selected");
+    if (row.dataset.model === modelKey) {
+      row.classList.add("selected");
+      selectedRow = row;
+    } else {
+      row.classList.remove("selected");
+    }
   }
   positionSidebarIndicator(modelKey);
+  if (selectedRow) revealSidebarRow(selectedRow);
 }
 
 // Pulse a dropdown briefly so the user sees the sync rather than a
@@ -2745,6 +2780,16 @@ for (const row of sidebarRows) {
 // Initialize state
 applyModelSelection("all");
 syncSidebarSelected("all");
+if (sidebarList) {
+  sidebarList.addEventListener("scroll", updateSidebarScrollHints, { passive: true });
+  window.addEventListener("load", updateSidebarScrollHints);
+  // The list's height follows the window (and the fonts, and the zoom),
+  // so re-check whenever its box changes size.
+  if (window.ResizeObserver) {
+    new ResizeObserver(updateSidebarScrollHints).observe(sidebarList);
+  }
+  updateSidebarScrollHints();
+}
 
 // Findings "+ details" / "− details" expand-collapse toggles. Each
 // button has an aria-controls pointing at the corresponding details
@@ -2836,6 +2881,7 @@ window.addEventListener("resize", () => {
   if (lockedSelection && lockedSelection !== "all") {
     positionSidebarIndicator(lockedSelection);
   }
+  updateSidebarScrollHints();
 });
 
 // DEAD CODE — CURRENTLY UNUSED (kept as fallback). The date-pill pager
