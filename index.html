@@ -205,6 +205,14 @@
             </p>
             <ul class="log-entries">
               <li class="log-entry">
+                <p class="log-meta"><time datetime="2026-11-10">November 10, 2026</time><span class="log-model">Google Gemini 4 Carbon</span><span class="log-released">released November 10, 2026</span></p>
+                <ul class="log-claims">
+                  <li>Gemini 4 Carbon scores more harshly than Gemini 4 Argon. It puts 46% of papers at a 4 and gives the top score to 5%, against 14% for Argon. Its distance from the human score distribution (L&#8321; = 0.44) is larger than Argon's (0.25).</li>
+                  <li>Agreement with a single human reviewer is r = 0.25, close to Argon's 0.26 and above the human-human benchmark.</li>
+                  <li>The tail-versus-middle pattern holds. Humans are ahead in both tails, with the top-tail gap significant at the 1% level and the bottom-tail gap at the 10% level, and Gemini 4 Carbon predicts citations in the middle, where the human score does not.</li>
+                </ul>
+              </li>
+              <li class="log-entry">
                 <p class="log-meta"><time datetime="2026-11-09">November 9, 2026</time><span class="log-model">Anthropic Fable&nbsp;5.2</span><span class="log-released">released November 9, 2026</span></p>
                 <ul class="log-claims">
                   <li>Fable 5.2 scores harshly, as Fable 5.1 and Opus 5.5 do. It puts 44% of papers at a 4 and under 2% at the top score. Its distance from the human score distribution (L&#8321; = 0.47) is smaller than Fable 5.1's (0.53) and larger than Fable 5's (0.33).</li>
@@ -299,6 +307,7 @@
             <option value="gpt-5.5">OpenAI GPT-5.5</option>
             <option value="gpt-5.4">OpenAI GPT-5.4</option>
             <option value="gpt-5.1">OpenAI GPT-5.1</option>
+            <option value="gemini-4-carbon">Google Gemini 4 Carbon</option>
             <option value="gemini-4-argon">Google Gemini 4 Argon</option>
           </select>
         </div>
@@ -406,6 +415,7 @@
             <option value="gpt-5.5">OpenAI GPT-5.5</option>
             <option value="gpt-5.4">OpenAI GPT-5.4</option>
             <option value="gpt-5.1">OpenAI GPT-5.1</option>
+            <option value="gemini-4-carbon">Google Gemini 4 Carbon</option>
             <option value="gemini-4-argon">Google Gemini 4 Argon</option>
           </select>
         </div>
@@ -501,7 +511,8 @@
           <li class="model-row" data-model="gpt-5.5"><span class="model">GPT&#8209;5.5</span></li>
           <li class="model-row" data-model="gpt-5.4"><span class="model">GPT&#8209;5.4</span></li>
           <li class="model-row" data-model="gpt-5.1"><span class="model">GPT&#8209;5.1</span></li>
-          <li class="model-row vendor-break" data-model="gemini-4-argon"><span class="model">Gemini 4 Argon</span></li>
+          <li class="model-row vendor-break" data-model="gemini-4-carbon"><span class="model">Gemini 4 Carbon</span></li>
+          <li class="model-row" data-model="gemini-4-argon"><span class="model">Gemini 4 Argon</span></li>
         </ul>
       </aside>
     </div><!-- /figures-grid -->
